@@ -1019,7 +1019,7 @@ function drawSkeleton(){
 function weightSplit(q){
   const feet=[0,1].filter(k=>q.ft[k]); if(!feet.length) return null;
   if(feet.length===1) return {one:true};
-  const d=gdir(), fk=q.ft[0].x*d>q.ft[1].x*d?0:1, rk=1-fk;
+  const d=q.ref||gdir(), fk=q.ft[0].x*d>q.ft[1].x*d?0:1, rk=1-fk; // 앞·뒷발 기준은 지면반력과 동일
   const fF=q.ft[fk].fy, fR=q.ft[rk].fy, den=(q.ft[fk].x-q.ft[rk].x)*d;
   const t=den>.004?((q.cx-q.ft[rk].x)*d)/den:null;
   let pF=fF+fR>.05?fF/(fF+fR):(t==null?.5:Math.max(0,Math.min(1,t)));
@@ -1073,17 +1073,25 @@ function drawShift(){
     ctx.setLineDash([6*s,6*s]); ctx.strokeStyle='rgba(255,255,255,.7)'; ctx.lineWidth=2*s; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx,floorY); ctx.stroke(); ctx.setLineDash([]);
     let inside=true, mk=cx;
     if(feet.length===2){
-      const xs=feet.map(k=>q.ft[k].x*W), lo=Math.min(...xs), hi=Math.max(...xs), by=Math.min(H-30*s,floorY+14*s);
-      const frontK=q.ft[0].x*d>q.ft[1].x*d?0:1, rearK=1-frontK;
-      ctx.fillStyle='rgba(255,255,255,.22)'; ctx.strokeStyle='rgba(255,255,255,.85)'; ctx.lineWidth=2*s;
-      ctx.beginPath(); ctx.rect(lo,by,hi-lo,9*s); ctx.fill(); ctx.stroke();
-      [[q.ft[frontK].x*W,'앞발','#3ec6ff'],[q.ft[rearK].x*W,'뒷발','#ff9f43']].forEach(([x,t,c])=>{ ctx.fillStyle=c; ctx.beginPath(); ctx.arc(x,by+4.5*s,6*s,0,7); ctx.fill();
-        ctx.textAlign='center'; label(t,x,by+26*s,c,12*s); });
-      const den=(q.ft[frontK].x-q.ft[rearK].x)*W*d, t=den>4*s?((q.cx*W-q.ft[rearK].x*W)*d)/den:null;
+      const fd=q.ref||d, by=Math.min(H-60*s,floorY+14*s), gh=24*s; // 앞·뒷발은 지면반력과 같은 기준(진행 방향)
+      const frontK=q.ft[0].x*fd>q.ft[1].x*fd?0:1, rearK=1-frontK;
+      const den=(q.ft[frontK].x-q.ft[rearK].x)*W*fd, t=den>4*s?((q.cx*W-q.ft[rearK].x*W)*fd)/den:null;
       inside=t==null||(t>=-.05&&t<=1.05); mk=cx;
       const fF=q.ft[frontK].fy, fR=q.ft[rearK].fy; let pF=fF+fR>.05?fF/(fF+fR):(t==null?.5:Math.max(0,Math.min(1,t)));
-      lines.push(`체중 앞발 ${Math.round(pF*100)}% · 뒷발 ${Math.round((1-pF)*100)}%`);
+      pF=Math.max(0,Math.min(1,pF)); const pR=1-pF;
+      lines.push(`체중 앞발 ${Math.round(pF*100)}% · 뒷발 ${Math.round(pR*100)}%`);
       if(t!=null) lines.push(t<.4?'중심이 뒷발 쪽':t>.6?'중심이 앞발 쪽':'중심이 두 발 가운데');
+      // 체중 게이지: 뒷발 끝에서 주황, 앞발 끝에서 파랑이 체중만큼 채워지고 5:5면 정확히 가운데서 만나요
+      const xr=q.ft[rearK].x*W, xf=q.ft[frontK].x*W, mid=(xr+xf)/2, half=Math.max(Math.abs(xf-xr)/2,70*s), sg=xf>=xr?1:-1;
+      const g0=mid-sg*half, g1=mid+sg*half, bx=g0+(g1-g0)*pR, gl=Math.min(g0,g1), gw=Math.abs(g1-g0);
+      ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(gl-3*s,by-3*s,gw+6*s,gh+6*s);
+      ctx.fillStyle='#ff9f43'; ctx.fillRect(Math.min(g0,bx),by,Math.abs(bx-g0),gh);
+      ctx.fillStyle='#3ec6ff'; ctx.fillRect(Math.min(bx,g1),by,Math.abs(g1-bx),gh);
+      ctx.strokeStyle='#fff'; ctx.lineWidth=2*s; ctx.strokeRect(gl,by,gw,gh);
+      ctx.lineWidth=3*s; ctx.beginPath(); ctx.moveTo(bx,by-5*s); ctx.lineTo(bx,by+gh+5*s); ctx.stroke(); // 두 색이 만나는 선
+      const r=Math.round(pR*10), lv=sg>0?r:10-r; // 숫자는 화면 왼쪽 색부터 (왼쪽 : 오른쪽)
+      ctx.textAlign='center'; ctx.textBaseline='middle'; label(`${lv} : ${10-lv}`,mid,by+gh/2+1*s,'#ffffff',17*s); ctx.textBaseline='alphabetic';
+      label(`뒷발 ${Math.round(pR*100)}%`,g0,by+gh+20*s,'#ff9f43',13*s); label(`앞발 ${Math.round(pF*100)}%`,g1,by+gh+20*s,'#3ec6ff',13*s);
     } else {
       const f=q.ft[feet[0]], off=(q.cx-f.x)*VW*mpp*100*d;
       lines.push(`한 발 지지 · 중심이 발보다 ${Math.abs(off).toFixed(0)}cm ${off>=0?'앞':'뒤'}`);

@@ -373,15 +373,18 @@ tr[data-foc]{cursor:pointer} tr[data-foc]:active td,tr[data-foc]:hover td{backgr
   <label class="chk"><input type="checkbox" id="kickOn" checked> 🦵 발차기 각도</label>
   <label class="chk"><input type="checkbox" id="balOn" checked> 📐 기저면·균형</label>
   <label class="chk"><input type="checkbox" id="tkdOn" checked> 🩺 태권도 진단</label>
+  <label class="chk"><input type="checkbox" id="waistOn" checked> 🌀 허리 게이지</label>
+  <label class="chk">손 모양 <select id="handMode"><option value="fist" selected>✊ 주먹 (기본)</option><option value="knife">🖐 손날·편손</option></select></label>
 </div>
 </details>
 <details class="pan" id="cmpBox">
 <summary class="secS" style="margin:0">👥 비교 겹쳐보기 <span class="sub" style="font-weight:400">(⭐ 모범 지표 · 👥 원생·라이벌)</span></summary>
 <div class="bar"><label class="chk">비교 대상 <select id="cmpSrc"><option value="ref" selected>⭐ 모범 지표 (기본 + 학습한 모범 영상)</option><option value="vid">👥 원생·라이벌 영상</option></select></label></div>
 <div class="bar"><label class="chk">기준 선수 <select id="eliteSel"></select></label></div>
+<div class="bar"><label class="chk"><input type="checkbox" id="ghRef"> ⭐ 모범 더미 겹쳐보기</label><span class="sub">원생 동작과 모양이 비슷한 모범 동작만 보여 줘요</span></div>
 <div class="sub" id="refOpts">원생 영상을 분석하면 동작마다(지르기·막기·발차기·서기) 같은 종류의 모범 동작을 골라, 박자·몸 크기·보는 방향을 원생에게 맞춰 겹쳐 보여 줘요. 몸이 겹치지 않는 곳이 고칠 곳이에요.</div>
 <div class="bar"><label class="chk"><input type="checkbox" id="ghost" checked> 상대 보이기</label>
-  <select id="ghStyle"><option value="skel">🦴 해골(선)</option><option value="dummy" selected>🧍 더미(몸 모양)</option></select>
+  <select id="ghStyle"><option value="skel">🦴 해골(선)</option><option value="dummy" selected>🧍 더미(몸 모양)</option></select> <label class="chk"><input type="checkbox" id="duelOn" checked> ⚔ 대결 점수판</label>
   <label class="chk"><input type="checkbox" id="gh2d" checked> 영상 위(2D)</label><label class="chk"><input type="checkbox" id="gh3d" checked> 3D 보기</label></div>
 <div class="bar"><label class="chk">상대 색 <input type="color" id="cmpColor" value="#ff9f1c" style="width:38px;height:30px;padding:0;border:0;background:none;vertical-align:middle"></label>
   <label class="chk">상대 투명도 <input id="ghA" type="range" min="10" max="100" value="55" style="width:110px"></label></div>
@@ -584,7 +587,7 @@ tr[data-foc]{cursor:pointer} tr[data-foc]:active td,tr[data-foc]:hover td{backgr
 </div>
 <div id="help" hidden role="dialog" aria-label="단축키">
   <div class="card">
-    <h3>⌨ 단축키 <small style="font-weight:400;color:var(--sub);font-size:11px">· 버전 10-09 12시30분</small></h3>
+    <h3>⌨ 단축키 <small style="font-weight:400;color:var(--sub);font-size:11px">· 버전 10-09 15시</small></h3>
     <table>
       <tr><td><kbd>Space</kbd></td><td>재생 / 일시정지 (프리즈 중에는 계속 재생)</td></tr>
       <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>1프레임 이동 (<kbd>Shift</kbd> 누르면 10프레임)</td></tr>
@@ -859,6 +862,14 @@ function drawAnn(a){
   ctx.restore();
 }
 
+/* 뒷모습: 코가 두 귀보다 카메라에서 멀면 등을 보인 거예요 → 팔은 몸에 가려 AI가 지어내므로 그리지도, 판정하지도 않아요 */
+function isBackLm(l){ if(!l) return false; const n=l[0],a=l[7],b=l[8]; if(!n||!a||!b||n.wz==null||a.wz==null||b.wz==null) return false; return n.wz-(a.wz+b.wz)/2>.03; }
+let BACKARR=null, BACKFOR=null, BACKV=false;
+function backAt(t){ if(track&&track.length){ if(BACKFOR!==track){ BACKFOR=track; const raw=track.map(f=>isBackLm(f&&f.lm)?1:0), n=raw.length, sm=new Uint8Array(n);
+      for(let i=0;i<n;i++){ let s2=0,c=0; for(let d=-4;d<=4;d++){ const j=i+d; if(j>=0&&j<n&&track[j]&&track[j].lm){ s2+=raw[j]; c++; } } sm[i]=c&&s2*2>c?1:0; } BACKARR=sm; }
+    return !!BACKARR[Math.max(0,Math.min(BACKARR.length-1,Math.round(t*AFPS)))]; }
+  return isBackLm(pose); }
+const ARMJ=new Set([13,14,15,16,17,18,19,20,21,22]);
 const LINKS=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28],[27,29],[29,31],[27,31],[28,30],[30,32],[28,32],[15,17],[15,19],[15,21],[16,18],[16,20],[16,22]];
 const TRI=[[11,13,15],[12,14,16],[23,25,27],[24,26,28],[13,11,23],[14,12,24],[11,23,25],[12,24,26]];
 const JN=['왼 팔꿈치','오른 팔꿈치','왼 무릎','오른 무릎','왼 어깨','오른 어깨','왼 고관절','오른 고관절'];
@@ -873,15 +884,34 @@ const scoreCol=v=>v>=85?'#3ddc97':v>=70?'#ffd23f':'#ff6b6b';
 const diffCol=d=>d<12?'#3ddc97':d<25?'#ffd23f':'#ff6b6b';
 const curIdx=t=>Math.max(0,Math.min((cmp?cmp.fs.length:track.length)-1,Math.round(t*AFPS)));
 
+/* 손·발 모양: AI가 주는 손 점(손목·검지·새끼·엄지 마디)만으로는 주먹/편 손을 구분할 수 없어서
+   품새 기본인 주먹으로 그려요 (손날 동작은 「손 모양」에서 손날로) · 발은 뒤꿈치~발끝 발바닥 모양 */
+const HFJ=new Set([15,16,17,18,19,20,21,22,27,28,29,30,31,32]);
+function drawHandFoot(P,W,H,s,col){ const pt=i=>{ const l=P[i]; return l&&l.x!=null&&(l.visibility??1)>=.3?{x:l.x*W,y:l.y*H}:null; }, knife=$('handMode')&&$('handMode').value==='knife';
+  const fillShape=(path,a)=>{ ctx.beginPath(); path(); ctx.globalAlpha*=1; ctx.fillStyle=col; ctx.save(); ctx.globalAlpha*=a; ctx.fill(); ctx.restore(); ctx.lineWidth=2*s; ctx.strokeStyle='rgba(0,0,0,.55)'; ctx.stroke(); ctx.lineWidth=1.2*s; ctx.strokeStyle=col; ctx.stroke(); };
+  if(!BACKV) [[15,13,17,19,21],[16,14,18,20,22]].forEach(([w,e,pk,ix,th])=>{ const Wr=pt(w), E=pt(e), K=pt(pk), I=pt(ix); if(!Wr) return;
+    const tip=K&&I?{x:(K.x+I.x)/2,y:(K.y+I.y)/2}:(I||K); let dx,dy; if(tip){ dx=tip.x-Wr.x; dy=tip.y-Wr.y; } else if(E){ dx=Wr.x-E.x; dy=Wr.y-E.y; } else return;
+    const fa=E?Math.hypot(Wr.x-E.x,Wr.y-E.y):0, L0=Math.hypot(dx,dy)||1, ux=dx/L0, uy=dy/L0, hl=Math.max(9*s,Math.min(fa*.42||L0*1.6,L0*1.8)), wd=K&&I?Math.max(7*s,Math.hypot(K.x-I.x,K.y-I.y)*1.25):hl*.8, ang=Math.atan2(uy,ux);
+    ctx.save(); ctx.translate(Wr.x,Wr.y); ctx.rotate(ang);
+    if(knife){ fillShape(()=>{ ctx.moveTo(0,-wd*.45); ctx.lineTo(hl*1.55,-wd*.32); ctx.quadraticCurveTo(hl*1.85,0,hl*1.55,wd*.32); ctx.lineTo(0,wd*.45); ctx.closePath(); },.55); }
+    else { const c=hl*.62, r=Math.max(5*s,Math.min(hl*.62,wd*.62)); fillShape(()=>{ ctx.roundRect?ctx.roundRect(c-r,-r,2*r,2*r,r*.55):ctx.arc(c,0,r,0,7); },.75);
+      ctx.strokeStyle='rgba(0,0,0,.45)'; ctx.lineWidth=1.2*s; for(let q=1;q<4;q++){ const yy=-r+2*r*q/4; ctx.beginPath(); ctx.moveTo(c+r*.35,yy); ctx.lineTo(c+r*.92,yy); ctx.stroke(); } } // 주먹 마디
+    ctx.restore(); });
+  [[27,29,31],[28,30,32]].forEach(([a,h,t])=>{ const A=pt(a), He=pt(h), To=pt(t); if(!He||!To) return; const dx=To.x-He.x, dy=To.y-He.y, fl=Math.hypot(dx,dy); if(fl<4*s) return;
+    const ang=Math.atan2(dy,dx), w=Math.max(5*s,fl*.36); ctx.save(); ctx.translate(He.x,He.y); ctx.rotate(ang);
+    fillShape(()=>{ ctx.moveTo(0,-w*.3); ctx.bezierCurveTo(fl*.35,-w*.45,fl*.75,-w*.62,fl*1.02,-w*.3); ctx.quadraticCurveTo(fl*1.12,0,fl*1.02,w*.32); ctx.bezierCurveTo(fl*.7,w*.5,fl*.35,w*.38,0,w*.32); ctx.quadraticCurveTo(-w*.38,0,0,-w*.3); },.45);
+    ctx.restore(); if(A){ ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(He.x+dx*.35,He.y+dy*.35); ctx.lineWidth=3*s; ctx.strokeStyle=col; ctx.stroke(); } });
+}
 function drawPose(){
   drawOthers();
   if(!poseOn||!pose||!$('myOn').checked) return;
   ctx.globalAlpha=(bodyOn?.28:1)*myA(); // 인체·근육 모드에서는 관절 선을 옅게 → 근육이 잘 보이게
   const s=sc(),W=cv.width,H=cv.height, myC=$('myColor').value||'#ffffff';
   ctx.save(); ctx.lineWidth=3*s; ctx.strokeStyle=myC; ctx.lineCap='round';
-  if(!skelOn) LINKS.forEach(([i,j])=>{const a=pose[i],b=pose[j]; if(!a||!b||(a.visibility??1)<0.4||(b.visibility??1)<0.4) return;
+  if(!skelOn) LINKS.forEach(([i,j])=>{const a=pose[i],b=pose[j]; if(!a||!b||(a.visibility??1)<0.4||(b.visibility??1)<0.4) return; if(BACKV&&(ARMJ.has(i)||ARMJ.has(j))) return; if(HFJ.has(i)&&HFJ.has(j)) return; // 손·발은 아래에서 모양으로
     ctx.beginPath(); ctx.moveTo(a.x*W,a.y*H); ctx.lineTo(b.x*W,b.y*H); ctx.stroke();});
-  if(!skelOn) pose.forEach((l,i)=>{ if(i>10&&(l.visibility??1)<0.4) return;
+  if(!skelOn){ ctx.save(); drawHandFoot(pose,W,H,s,myC); ctx.restore(); ctx.lineWidth=3*s; ctx.strokeStyle=myC; }
+  if(!skelOn) pose.forEach((l,i)=>{ if(i>10&&(l.visibility??1)<0.4) return; if(BACKV&&ARMJ.has(i)) return; if(i>=17&&i!==27&&i!==28&&!(i>=23&&i<=26)) return;
     ctx.beginPath(); ctx.arc(l.x*W,l.y*H,(i<11?3:5.5)*s,0,7); ctx.fillStyle=myC==='#ffffff'?'#3fb68b':myC; ctx.fill();
     ctx.lineWidth=1.5*s; ctx.strokeStyle='#fff'; ctx.stroke(); });
   if(cmp&&$('scoreOn').checked){ // 비교 영상과 차이 큰 관절 색 표시
@@ -983,7 +1013,7 @@ $('skelBtn').onclick=()=>{
   if(skelOn&&!poseOn) $('poseBtn').click(); else render();
 };
 ['skDim'].forEach(id=>$(id).oninput=()=>render());
-['skName','skRib','skHand'].forEach(id=>$(id).onchange=()=>render());
+['skName','skRib','skHand','handMode'].forEach(id=>$(id).onchange=()=>render());
 
 function drawSkelDim(){
   if(!skelOn||!poseOn||!pose) return;
@@ -1129,6 +1159,7 @@ function drawSkeleton(){
 
   /* ----- 손 뼈 (수근골 8 · 중수골 5 · 지골 14) ----- */
   const handBones=(Wr,E,idx,sg)=>{
+    const fistB=!($('handMode')&&$('handMode').value==='knife');
     const t17=P(idx[0]),t19=P(idx[1]),t21=P(idx[2]);
     const m=t19&&t17?mid(t19,t17):(t19||t17); if(!m) return;
     const fd=unit(E,Wr), rd=unit(Wr,m);
@@ -1145,6 +1176,9 @@ function drawSkeleton(){
     for(let q=3;q>=0;q--){
       const B=Hd(.19,MCb[q]), Hh=Hd(hu[q],MCh[q]), T=Hd(tu[q],tb[q]);
       longBone(B,Hh,.17*hw,.27*hw,{rA:.5,rB:.52,dB:false});
+      if(fistB){ // 주먹: 손가락이 손바닥 쪽으로 말려 들어가 마디(첫째 지골)만 앞으로 보여요
+        const k1=Hd(hu[q]+.17*ws[q],MCh[q]*1.02), k2=Hd(hu[q]+.03,MCh[q]*.96);
+        longBone(Hh,k1,.15*hw,.23*hw,{rA:.5,rB:.55}); longBone(k1,k2,.12*hw,.19*hw,{rA:.5,rB:.5}); continue; }
       const f1=lerp(Hh,T,.46),f2=lerp(Hh,T,.46+.29*ws[q]+(1-ws[q])*.0),f2b=lerp(Hh,T,.75);
       longBone(Hh,f1,.15*hw,.23*hw,{rA:.5,rB:.5});
       longBone(f1,f2b,.12*hw,.19*hw,{rA:.5,rB:.46});
@@ -1152,13 +1186,14 @@ function drawSkeleton(){
       dot(T,.065*hw);
     }
     // 엄지: 대능형골 → 중수골 → 기절골 → 말절골
-    let TT; if(t21){ const d=dist(Wr,t21)||1, u=unit(Wr,t21); TT={x:Wr.x+u.x*clamp(d*1.3,.12*L,.26*L),y:Wr.y+u.y*clamp(d*1.3,.12*L,.26*L)}; } else TT=Hd(.62,1.05);
+    let TT; if(fistB) TT=Hd(.6,.02); // 주먹: 엄지는 검지·중지 둘째 마디를 가로질러 눌러요
+    else if(t21){ const d=dist(Wr,t21)||1, u=unit(Wr,t21); TT={x:Wr.x+u.x*clamp(d*1.3,.12*L,.26*L),y:Wr.y+u.y*clamp(d*1.3,.12*L,.26*L)}; } else TT=Hd(.62,1.05);
     const tb0=Hd(.13,.42), j0=lerp(tb0,TT,.32), j1=lerp(tb0,TT,.66);
     longBone(tb0,j0,.2*hw,.3*hw,{rA:.5,rB:.5});
     longBone(j0,j1,.17*hw,.26*hw,{rA:.5,rB:.48});
     longBone(j1,TT,.14*hw,.22*hw,{rA:.48,rB:.5});
     dot(TT,.08*hw);
-    names('수근골',Hd(.1,0)); names('중수골',Hd(.32,.05)); names('지골',Hd(.82,.1));
+    names('수근골',Hd(.1,0)); names('중수골',Hd(.32,.05)); names(fistB?'지골(주먹)':'지골',Hd(fistB?.62:.82,.1));
   };
   /* ----- 발 뼈 (종골 · 거골 · 주상골 · 입방골 · 설상골 3 · 중족골 5 · 족지골 14) ----- */
   const footBones=(A,Hl,To)=>{
@@ -1208,7 +1243,7 @@ function drawSkeleton(){
       if(showHand) handBones(Wr,E,idx,sg);
     }
   };
-  arm(11,13,15,0,[17,19,21]); arm(12,14,16,0,[18,20,22]);
+  if(!BACKV){ arm(11,13,15,0,[17,19,21]); arm(12,14,16,0,[18,20,22]); } // 뒷모습이면 팔은 가려져 보이지 않으니 그리지 않아요
 
   /* ----- 다리 ----- */
   const leg=(hi,ki,ai,hl,ti)=>{
@@ -1798,6 +1833,8 @@ function tkdDiag(T,W,H,hcm,fps){
   // 발차기 중·넘어진 뒤의 팔 움직임은 지르기·막기로 세지 않음
   const busy=kres.map(k=>[k.s,k.fall?Math.min(n-1,(k.land>=0?k.land:k.e)+Math.round(1*fps)):k.e]);
   for(let q=arms.length-1;q>=0;q--){ const A=arms[q]; if(busy.some(([a,b])=>A.imp>=a&&A.imp<=b)) arms.splice(q,1); }
+  // 등을 보인 채 한 팔 동작은 팔이 가려져 AI가 지어낸 값 → 판정에서 빼요
+  for(let q=arms.length-1;q>=0;q--){ const A=arms[q]; let b2=0,c2=0; for(let d=-3;d<=3;d++){ const f=T[A.imp+d]; if(f&&f.lm){ c2++; if(isBackLm(f.lm)) b2++; } } if(c2&&b2*2>c2) arms.splice(q,1); }
   steps.forEach(S=>{ const C=[]; const ok=(b,w=1)=>C.push([b,w]); ok(S.settle!=null?gr(S.settle,.3,.9):.5,.5); if(S.sway!=null) ok(gr(S.sway,.02*BH/1.6,.03)); if(S.mmin!=null) ok(gr(-S.mmin,0,.08),1.2); if(S.lean!=null) ok(gr(S.lean,18,12),.8);
     if(S.hipOff!=null) ok(gr(Math.abs(S.hipOff),.08*BH/1.6,.06),.6); S.score=scoreOf(C); });
   // 🎼 완급(속도 변화)·정지: 동작들의 최고 속도 차이 · 몸 전체가 멈춘 순간
@@ -1806,7 +1843,8 @@ function tkdDiag(T,W,H,hcm,fps){
   const holds=[]; { let st=-1; for(let i=0;i<=n;i++){ const still=i<n&&bs[i]!=null&&bs[i]<.35*BH/1.6; if(still&&st<0) st=i; if(!still&&st>=0){ if(i-st>=Math.round(.25*fps)) holds.push({a:st,b:i-1,dur:sec(i-st)}); st=-1; } } }
   const slow=arms.filter(x=>x.dur>=.6&&x.v<.55*(mv||1)).length;
   const seq={cv,holds:holds.length,holdT:holds.reduce((x,h)=>x+h.dur,0),slow,moves:pv.length,active:n/fps-holds.reduce((x,h)=>x+h.dur,0)};
-  return {n,fps,BH,TL,has3:!!s3,sgnLeft,steps,arms,pulls,kicks:kres,dur:n/fps,seq,up};
+  let waist=null; try{ waist=waistAnalyze(T,fps); }catch(e){ console.error(e); }
+  return {n,fps,BH,TL,has3:!!s3,sgnLeft,steps,arms,pulls,kicks:kres,dur:n/fps,seq,up,waist};
 }
 
 /* ---------- 진단 보고서: 요약 · 좌우 비교 · 코칭 원칙 · 동작별 · 발차기·넘어짐 · 비교 영상 · 처방 운동 ---------- */
@@ -1900,6 +1938,13 @@ function fitProj(p,W,H){ const A=Array.from({length:4},()=>new Float64Array(5)),
   if(n<6) return null; const solve=M=>{ for(let a=0;a<4;a++) M[a][a]+=1e-6; for(let c=0;c<4;c++){ let pv=c; for(let r=c+1;r<4;r++) if(Math.abs(M[r][c])>Math.abs(M[pv][c])) pv=r; [M[c],M[pv]]=[M[pv],M[c]]; if(Math.abs(M[c][c])<1e-12) return null;
       for(let r=0;r<4;r++){ if(r===c) continue; const f=M[r][c]/M[c][c]; for(let k=c;k<5;k++) M[r][k]-=f*M[c][k]; } } return [0,1,2,3].map(a=>M[a][4]/M[a][a]); };
   const U=solve(A), V=solve(B); return U&&V?{U,V}:null; }
+// 원생 자세와 모범 자세가 비슷한지 (무릎·엉덩관절·팔꿈치·어깨 각도와 몸통 기울기) — 너무 다르면 엉뚱한 동작이 골라진 것
+function ghostSimilar(S,Q,J){ const has=j=>J.includes(j)&&S[j]&&Q[j], ang=(D,a,b,c)=>{ const u=GV.sub(D[a],D[b]), v=GV.sub(D[c],D[b]); const l=GV.len(u)*GV.len(v); return l>1e-9?Math.acos(Math.max(-1,Math.min(1,GV.dot(u,v)/l)))*180/Math.PI:null; };
+  const T=[[23,25,27],[24,26,28],[11,23,25],[12,24,26],[11,13,15],[12,14,16],[23,11,13],[24,12,14]], d=[];
+  T.forEach(([a,b,c])=>{ if(has(a)&&has(b)&&has(c)){ const x=ang(S,a,b,c), y=ang(Q,a,b,c); if(x!=null&&y!=null) d.push(Math.abs(x-y)); } });
+  const lean=D=>{ if(!D[11]||!D[12]||!D[23]||!D[24]) return null; const u=GV.sub(GV.mid(D[11],D[12]),GV.mid(D[23],D[24])); return Math.acos(Math.max(-1,Math.min(1,-u.y/(GV.len(u)||1))))*180/Math.PI; };
+  const la=lean(S), lb=lean(Q); if(la!=null&&lb!=null&&Math.abs(la-lb)>35) return false;
+  if(!d.length) return true; return d.reduce((a,b)=>a+b,0)/d.length<=38; }
 function ghostPose(t,p){ p=p||pose; if(!p||!p[23]||p[23].wx==null) return null; const G=ghostWorld(t); if(!G) return null;
   const S={}; GJ.forEach(j=>{ const w=wOf(p,j); if(w) S[j]=w; }); if(!S[23]||!S[24]) return null; const hs=GV.mid(S[23],S[24]);
   const Q={};
@@ -1908,12 +1953,15 @@ function ghostPose(t,p){ p=p||pose; if(!p||!p[23]||p[23].wx==null) return null; 
     let phi=0; if(L.E){ if(L.E.phi==null){ const st=track[Math.max(0,Math.min(track.length-1,Math.round(L.E.k0)))], ys=st&&st.lm?yawOf(Object.fromEntries(GJ.map(j=>[j,wOf(st.lm,j)]).filter(x=>x[1]))):null;
         let Qe=refFrame(L.E.c,L.E.ck0); if(L.E.mir) Qe=mirrorQ(Qe); const ye=yawOf(Qe); L.E.phi=ys!=null&&ye!=null?ys-ye:0; } phi=L.E.phi; }
     else { const a=yawOf(S), b=yawOf(q); phi=a!=null&&b!=null?a-b:0; }
+    if(L.E&&L.E.ok==null){ const st=track[Math.max(0,Math.min(track.length-1,Math.round(L.E.k0)))], Sw=st&&st.lm?Object.fromEntries(GJ.map(j=>[j,wOf(st.lm,j)]).filter(x=>x[1])):null; let Qe=refFrame(L.E.c,L.E.ck0); if(L.E.mir) Qe=mirrorQ(Qe); L.E.ok=Sw?ghostSimilar(Sw,Qe,L.J):false; }
+    if(L.E&&!L.E.ok) continue;
     q=rotY(q,phi); L.J.forEach(j=>{ if(q[j]) Q[j]=q[j]; }); }
   if(!Q[23]||!Q[24]||!Q[11]||!Q[12]) return null;
   const ks=sizeOf(Q)>0?sizeOf(S)/sizeOf(Q):1; const W=cv.width,H=cv.height, PJ=fitProj(p,W,H); if(!PJ) return null;
   const out=new Array(33).fill(null);
   for(const j in Q){ const w={x:Q[j].x*ks+hs.x,y:Q[j].y*ks+hs.y,z:Q[j].z*ks+hs.z}, u=PJ.U[0]*w.x+PJ.U[1]*w.y+PJ.U[2]*w.z+PJ.U[3], v=PJ.V[0]*w.x+PJ.V[1]*w.y+PJ.V[2]*w.z+PJ.V[3];
     out[j]={x:u/W,y:v/H,wx:w.x,wy:w.y,wz:w.z,visibility:1}; }
+  if(backAt(t)) ARMJ.forEach(j=>{ out[j]=null; }); // 뒷모습이면 팔은 그리지 않아요
   out.lab=G.lab; return out; }
 const ghA=()=>Math.max(.05,(+$('ghA').value||80)/100), myA=()=>Math.max(.05,(+$('myA').value||100)/100);
 const hexRGBA=(h,a)=>`rgba(${parseInt(h.slice(1,3),16)},${parseInt(h.slice(3,5),16)},${parseInt(h.slice(5,7),16)},${a})`;
@@ -1934,7 +1982,7 @@ function drawGhostFig(P,col,alpha,style,lab){ const s=Math.max(.5,cv.width/(cv.g
   ctx.globalAlpha=1; const hd=Q(0)||Q(11); if(hd&&lab) label(lab,hd.x-30*s,hd.y-30*s,col,15*s);
   ctx.restore(); }
 function drawGhost(){
-  if(!$('ghost').checked||!$('gh2d').checked||!pose) return; const st=$('ghStyle').value, col=cmpHex(), al=ghA();
+  if(!$('ghost').checked||!$('gh2d').checked||!pose) return; if($('cmpSrc').value==='ref'&&!$('ghRef').checked) return; const st=$('ghStyle').value, col=cmpHex(), al=ghA();
   const gp=ghostPose(vtime(),pose);
   if(gp){ drawGhostFig(gp,col,al,st,gp.lab); return; }
   // 3D 좌표가 없을 때(비교 영상): 골반 위치·몸통 길이만 맞춰 겹쳐요
@@ -1947,7 +1995,7 @@ function drawTvOver(){ if($('cmpSrc').value!=='vid'||!cmp||!$('tvOver').checked|
   const tp=teacherPose(vtime()); if(!tp) return; const W=cv.width,H=cv.height,TW=tv.videoWidth,TH=tv.videoHeight, A=anchor(pose,W,H),B=anchor(tp,TW,TH); if(!A||!B||!B.L) return; const k=A.L/B.L;
   ctx.save(); ctx.globalAlpha=Math.max(.05,(+$('tvA').value||45)/100); ctx.drawImage(tv,A.hx-B.hx*k,A.hy-B.hy*k,TW*k,TH*k); ctx.restore(); }
 // 설정 바뀌면 다시 그리기
-['cmpSrc','ghStyle','gh2d','gh3d','ghA','myOn','myColor','myA','tvOver','tvA','ghost','cmpColor','poomsae'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('input',()=>{ if(id==='cmpSrc') cmpSrcUpd(); if(id==='poomsae'){ REFFOR=null; REFMAP=null; } render(); }); });
+['ghRef','cmpSrc','ghStyle','gh2d','gh3d','ghA','myOn','myColor','myA','tvOver','tvA','ghost','cmpColor','poomsae'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('input',()=>{ if(id==='cmpSrc') cmpSrcUpd(); if(id==='poomsae'){ REFFOR=null; REFMAP=null; } render(); }); });
 $('vidA').addEventListener('input',()=>{ video.style.opacity=String(Math.max(.05,(+$('vidA').value)/100)); });
 function cmpSrcUpd(){ const v=$('cmpSrc').value==='vid'; $('vidOpts').hidden=!v; $('refOpts').hidden=v;
   if(v&&!tv.src) $('tName').textContent='아래 [👥 원생·라이벌 영상 불러오기]로 비교할 영상을 넣어 주세요.'; }
@@ -2152,7 +2200,7 @@ async function stuCompare(oldId,newId){ const mo=STU.ses.find(x=>x.id===oldId), 
     await new Promise(r=>{ tv.onloadedmetadata=r; tv.onerror=r; setTimeout(r,4000); });
     const raw=trkDec(To.raw), cl=To.clean?trkDec(To.clean):cleanTrack(raw,tv.videoWidth,tv.videoHeight); tTrack=resampleTr(cl,AFPS);
     $('thcm').value=mo.hcm||$('thcm').value; tFileName=mo.name; CMPLBL=`${fmtD(mo.date)} 기록`; $('tName').textContent=`비교: ${fmtD(mo.date)} 기록 (예전) ↔ ${fmtD(mn.date)} 기록 (지금)`;
-    $('cmpSrc').value='vid'; cmpSrcUpd(); $('ghost').checked=true; cmp=compare(); showReport(); $('cmpBox').open=true; render();
+    $('cmpSrc').value='vid'; cmpSrcUpd(); $('ghost').checked=true; $('ghStyle').value='dummy'; $('duelOn').checked=true; cmp=compare(); showReport(); $('cmpBox').open=true; render();
     toast(`🎞 ${fmtD(mn.date)}(지금) 위에 ${fmtD(mo.date)}(예전)을 겹쳐 비교해요 · 「비교 겹쳐보기」에서 투명도·겹치기를 바꿀 수 있어요`); };
   await stuOpen(newId); }
 function stuSelUpd(){ const el=$('stuSel'); if(!el) return; const cur=el.value; el.innerHTML='<option value="">원생 고르기</option>'+STU.list.slice().sort((a,b)=>a.name.localeCompare(b.name,'ko')).map(s=>`<option value="${esc(s.id)}">${esc(s.name)}</option>`).join(''); if(STU.list.some(s=>s.id===cur)) el.value=cur; }
@@ -2209,6 +2257,131 @@ $('stuList').addEventListener('click',ev=>{ const o=ev.target.closest('[data-ope
     askSave(`${s.name} 원생과 기록 ${L.length}개를 모두 지울까요?`,async()=>{ try{ for(const m of L){ await SDB.del('ses',m.id); await SDB.del('trk',m.id); await SDB.del('vid',m.id); } await SDB.del('stu',sid); }catch(e){} STU.ses=STU.ses.filter(x=>x.stu!==sid); STU.list=STU.list.filter(x=>x.id!==sid); stuListUpd(); toast('지웠어요'); },{y:'모두 지우기',n:'취소'}); } });
 (async()=>{ await Promise.resolve(); try{ if(window.indexedDB){ STU.list=await SDB.all('stu')||[]; STU.ses=await SDB.all('ses')||[]; } }catch(e){ console.warn('원생 기록 불러오기 실패',e); } stuListUpd(); })();
 
+
+/* ---------- 🌀 허리쓰임: 영상 전체에서 골반·어깨가 도는 방향을 계속 재요 ----------
+   골반 방향 = 두 엉덩관절을 잇는 선(위에서 내려다본 방향) · 어깨 방향 = 두 어깨를 잇는 선
+   회전 하나 = 골반이 한쪽으로 4° 넘게 돌다가 반대로 꺾이기까지 (지그재그로 끊어요 · 75° 넘으면 몸 돌리기(방향 전환)라 따로 세요)
+   골반이 먼저 돌고 어깨가 따라오면(몸통이 꼬였다 풀리며) 힘이 손발로 가요
+   정면·뒷면에서 찍으면 앞뒤 깊이가 약하게 잡혀 회전 각도가 실제보다 작게 나와요 → 그때는 기준을 낮춰요 */
+function waistAnalyze(tr,fps){ const n=tr?tr.length:0; if(n<fps) return null; const DG=180/Math.PI;
+  const yaw=(l,a,b)=>{ const p=l&&l[a],q=l&&l[b]; if(!p||!q||p.wx==null||q.wx==null) return null; const x=p.wx-q.wx, z=p.wz-q.wz; return Math.hypot(x,z)>.03?Math.atan2(z,x)*DG:null; };
+  const prep=A=>{ let off=0, last=null; const U=A.map(v=>{ if(v==null) return null; if(last!=null){ let d=v+off-last; while(d>180){ off-=360; d-=360; } while(d<-180){ off+=360; d+=360; } } last=v+off; return last; });
+    let k=0; while(k<n&&U[k]==null) k++; if(k>=n) return null; for(let i=0;i<k;i++) U[i]=U[k];
+    for(let i=k+1;i<n;i++) if(U[i]==null){ let j=i; while(j<n&&U[j]==null) j++; const a=U[i-1], b=j<n?U[j]:a; for(let q=i;q<j;q++) U[q]=a+(b-a)*(q-i+1)/(j-i+1); i=j; }
+    const rm=Math.max(1,Math.round(fps*.1)), M=U.map((_,i)=>{ const w=[]; for(let d=-rm;d<=rm;d++){ const j=i+d; if(j>=0&&j<n) w.push(U[j]); } w.sort((a,b)=>a-b); return w[w.length>>1]; }); // 순간 튐(측정 오류) 제거
+    const r=Math.max(1,Math.round(fps*.07)); return M.map((_,i)=>{ let s=0,c=0; for(let d=-r;d<=r;d++){ const j=i+d; if(j>=0&&j<n){ s+=M[j]; c++; } } return s/c; }); };
+  const raw=tr.map(f=>yaw(f&&f.lm,23,24)), P=prep(raw), S=prep(tr.map(f=>yaw(f&&f.lm,11,12))); if(!P||!S) return null;
+  let fr=0,fc=0; raw.forEach(v=>{ if(v!=null){ fc++; if(Math.abs(Math.sin(v/DG))<.5) fr++; } }); const front=fc>0&&fr/fc>.6;
+  const R=Math.round(3*fps), B=P.map((_,i)=>{ const w=[]; for(let j=Math.max(0,i-R);j<=Math.min(n-1,i+R);j+=3) w.push(P[j]); w.sort((a,b)=>a-b); return w[w.length>>1]; });
+  const BS=S.map((_,i)=>{ const w=[]; for(let j=Math.max(0,i-R);j<=Math.min(n-1,i+R);j+=3) w.push(S[j]); w.sort((a,b)=>a-b); return w[w.length>>1]; }); // 어깨는 따로 (카메라 각도에 따라 기본 차이가 있어요)
+  const pt=P.map((v,i)=>v-B[i]), st=S.map((v,i)=>v-BS[i]), pv=P.map((_,i)=>i>0&&i<n-1?(P[i+1]-P[i-1])*fps/2:0);
+  // 지그재그: 골반 방향이 4° 넘게 되돌아가면 거기서 한 회전이 끝난 거예요
+  const HZ=front?3:4, ext=[]; let mode=0, hi=0, lo=0, c=0;
+  for(let i=1;i<n;i++){ if(!mode){ if(P[i]>P[hi]) hi=i; if(P[i]<P[lo]) lo=i; if(P[hi]-P[i]>=HZ){ ext.push(hi); mode=-1; c=i; } else if(P[i]-P[lo]>=HZ){ ext.push(lo); mode=1; c=i; } }
+    else if(mode>0){ if(P[i]>P[c]) c=i; else if(P[c]-P[i]>=HZ){ ext.push(c); mode=-1; c=i; } }
+    else { if(P[i]<P[c]) c=i; else if(P[i]-P[c]>=HZ){ ext.push(c); mode=1; c=i; } } }
+  if(mode) ext.push(c);
+  const ev=[]; let turns=0;
+  for(let k=0;k+1<ext.length;k++){ const a0=ext[k], b0=ext[k+1], tot=P[b0]-P[a0], sg=Math.sign(tot)||1, amp=Math.abs(tot); if(amp>75){ turns++; continue; }
+    let a=a0, b=b0; while(a<b-1&&sg*(P[a+1]-P[a0])<.06*amp) a++; while(b>a+1&&sg*(P[b0]-P[b-1])<.06*amp) b--; // 가만있던 앞뒤는 잘라요
+    const dur=(b-a)/fps; if(dur>3||dur<.1||amp<HZ+1.5) continue;
+    let vmax=0; for(let q=a;q<=b;q++) vmax=Math.max(vmax,sg*pv[q]);
+    const e2=Math.min(n-1,b+Math.round(.4*fps)); let j=a; for(let q=a;q<=e2;q++) if(sg*(S[q]-S[a])>sg*(S[j]-S[a])) j=q; const sD=sg*(S[j]-S[a]);
+    const half=(A,tt,to)=>{ for(let q=a;q<=to;q++) if(sg*(A[q]-A[a])>=tt/2) return q; return null; };
+    const pH=half(P,amp,b), sH=sD>2?half(S,sD,e2):null, lead=pH!=null&&sH!=null?(sH-pH)/fps:null;
+    let sep=0; for(let q=a;q<=b;q++) sep=Math.max(sep,sg*((P[q]-P[a])-(S[q]-S[a]))); // 골반이 어깨보다 앞서 돈 만큼(꼬임)
+    let q8=b; for(let q=a;q<=b;q++) if(sg*(P[q]-P[a])>=.8*amp){ q8=q; break; }
+    ev.push({i:b,a,j,sg,amp,vmax,lead,sep,stop:(b-q8)/fps,dur,slow:dur>1.2,pAng:pt[b],sAng:st[j],sDelta:sD,pH,sH}); }
+  let EV=ev; if(EV.length>24) EV=[...ev].sort((x,y)=>y.amp-x.amp).slice(0,24).sort((x,y)=>x.i-y.i);
+  const md=A=>{ const B2=A.filter(x=>x!=null&&isFinite(x)).sort((a,b)=>a-b); return B2.length?B2[B2.length>>1]:null; }, fast=EV.filter(e=>!e.slow), LD=(fast.length?fast:EV).filter(e=>e.lead!=null);
+  const sum={n:EV.length,all:ev.length,turns,amp:md(EV.map(e=>e.amp)),vmax:md((fast.length?fast:EV).map(e=>e.vmax)),sep:md(EV.map(e=>e.sep)),stop:fast.length?md(fast.map(e=>e.stop)):null,
+    lead:LD.length?LD.filter(e=>e.lead>=WOK.leadS).length/LD.length:null,same:LD.length?LD.filter(e=>Math.abs(e.lead)<WOK.leadS).length/LD.length:null,late:LD.length?LD.filter(e=>e.lead<=WOK.leadBad).length/LD.length:null,
+    ratio:md(EV.map(e=>e.amp>0?e.sDelta/e.amp:null)),slow:EV.length-fast.length,fast:fast.length};
+  return {fps,n,P,S,pt,st,pv,ev:EV,sum,front}; }
+/* 좋은 허리쓰임 기준 — 모범 선수(이주영 등) 영상에서 잰 값: 한 번에 튼 골반 중간값 약 40°, 가장 빠를 때 약 170°/초, 마지막 20% 회전을 0.07초 안에 끝냄
+   정면 영상은 깊이가 약하게 잡혀 각도가 작게 나오므로 각도 기준을 절반으로 · 1초 30장 영상이라 0.03초 안 차이는 '동시에'로 봐요 */
+const WOK={amp:20,ampF:10,el:{amp:40,v:170,stop:.07,ratio:[1.3,2]},v:100,vF:50,leadS:.03,leadBad:-.1,late:.3,stop:.15};
+const wAmp=Wd=>Wd&&Wd.front?WOK.ampF:WOK.amp, wV=Wd=>Wd&&Wd.front?WOK.vF:WOK.v;
+const wLeadTxt=e=>e.lead==null?'어깨는 거의 안 돎':e.lead>=WOK.leadS?`골반 먼저 (${e.lead.toFixed(2)}초)`:e.lead<=-WOK.leadS?`어깨 먼저 (${(-e.lead).toFixed(2)}초)`:'골반·어깨 함께';
+const wEvOk=(e,Wd)=>e.slow?null:e.amp>=wAmp(Wd)&&(e.lead==null||e.lead>WOK.leadBad);
+function waistHtml(Wd,R){ if(!Wd) return '<div class="sub">3D 관절 정보가 없어 허리 회전을 잴 수 없어요 (「⚡ 동작 정밀 분석」을 해 주세요)</div>'; const s=Wd.sum, fps=Wd.fps, E=WOK.el;
+  if(!s.n) return `<div class="sub">이 영상에서는 골반이 ${Wd.front?3:4}° 넘게 돌았다 돌아오는 움직임을 못 찾았어요${s.turns?` (방향 전환 ${s.turns}번은 따로 셌어요)`:''}. 허리를 돌리는 동작은 대각선 앞에서 찍으면 더 잘 보여요.</div>`;
+  const line=(ok,nm,val,msg)=>`<div style="margin:3px 0">${ok==null?'ℹ️':ok?'✅':'⚠️'} ${nm} <b style="color:#ffd23f">${val}</b><br><span class="sub">${msg}</span></div>`;
+  let h=`<div style="margin:2px 0 6px">허리(골반) 회전 <b style="color:#ffd23f">${s.n}번</b> 찾았어요${s.turns?` · 몸 방향 바꾸기 ${s.turns}번은 따로`:''}${s.slow?` · 천천히 돌린 연습 ${s.slow}번`:''}</div>`;
+  if(Wd.front) h+=`<div class="sub" style="margin-bottom:4px">📷 정면(또는 뒷면)에서 찍은 영상이라 앞뒤로 도는 깊이가 약하게 잡혀요 — 각도는 실제보다 작게 나올 수 있어서 기준을 절반(${WOK.ampF}°)으로 봤어요.</div>`;
+  h+=line(s.amp>=wAmp(Wd),'한 번에 튼 골반 각도',`${Math.round(s.amp)}°`,s.amp>=wAmp(Wd)?`허리를 충분히 틀어요 (모범 선수 약 ${E.amp}°)`:`골반이 조금만 돌아요 (모범 선수 약 ${E.amp}°) → 벨트 매듭이 치는 쪽으로 확 돌아가게`);
+  if(s.fast) h+=line(s.vmax>=wV(Wd),'회전 속도 (가장 빠를 때)',`${Math.round(s.vmax)}°/초`,s.vmax>=wV(Wd)?`허리가 빠르게 돌아요 (모범 선수 약 ${E.v}°/초)`:`허리가 느리게 돌아요 (모범 선수 약 ${E.v}°/초) → 힘 빼고 있다가 한 번에 확`);
+  else h+=line(null,'회전 속도',`${Math.round(s.vmax)}°/초`,'천천히 돌리는 연습이라 속도는 평가하지 않았어요');
+  if(s.lead!=null) h+=line(s.fast?s.late<=WOK.late:null,'돌기 순서',`골반 먼저 ${Math.round(s.lead*100)}% · 함께 ${Math.round(s.same*100)}% · 어깨 먼저 ${Math.round(s.late*100)}%`,
+    !s.fast?'천천히 돌리는 연습이라 순서는 참고만 하세요':s.late<=WOK.late?'어깨가 골반보다 늦거나 함께 돌아요 — 허리로 몸을 끌고 가요':'어깨(팔)가 먼저 돌고 골반이 따라가요 → 골반을 먼저 틀고 어깨는 따라오게');
+  if(s.stop!=null) h+=line(s.stop<=WOK.stop,'끝에서 딱 멈춤',`${s.stop.toFixed(2)}초`,s.stop<=WOK.stop?`돌린 끝에서 허리를 딱 끊어요 (모범 ${E.stop.toFixed(2)}초)`:`돌린 뒤 허리가 스르륵 흘러가요 (모범 ${E.stop.toFixed(2)}초) → 끝에서 아랫배에 힘 주고 탁`);
+  if(s.ratio!=null) h+=line(null,'어깨가 따라 도는 양',`골반의 ${s.ratio.toFixed(1)}배`,s.ratio<.7?'골반만 돌고 어깨는 덜 따라와요 (모범 선수는 어깨가 골반보다 1.3~2배 더 돌아요)':s.ratio>2.6?'어깨가 골반보다 훨씬 많이 돌아요 → 팔·어깨로만 돌리지 말고 골반부터':'골반과 어깨가 함께 돌아요 (모범 선수 1.3~2배)');
+  h+=`<canvas class="wsg" width="720" height="170" style="width:100%;height:auto;margin-top:6px;background:#0a0d11;border-radius:10px;cursor:pointer" title="누르면 그 장면으로 가요"></canvas>
+    <div class="sub">주황 = 골반이 향한 방향 · 파랑 = 어깨가 향한 방향 (가운데 선 = 그 무렵 평소 방향). 점 = 찾은 회전 (초록 좋음 · 빨강 고칠 점 · 회색 연습). 그래프를 누르면 그 장면으로 가요.</div>`;
+  h+=`<div style="margin-top:6px"><b>회전 하나하나</b> <span class="sub">(누르면 그 장면에서 골반·어깨가 어떻게 돌았는지 보여 줘요)</span></div>`+Wd.ev.map((e,q)=>{ const ok=wEvOk(e,Wd),
+      m=MK(e.slow?'waist3':'waist2',`${q+1}. ${(e.i/fps).toFixed(1)}초 · ${e.sg>0?'왼쪽':'오른쪽'}으로 골반 ${Math.round(e.amp)}°${e.slow?' (천천히)':` · ${Math.round(e.vmax)}°/초`} · 어깨 ${Math.round(Math.max(0,e.sDelta))}° · ${wLeadTxt(e)}`), fi=focBuild('waist',{e,Wd},m,ok,R), id=fi?focAdd('t',fi):'';
+    return `<div class="foc"${id?` data-foc="${id}"`:''} style="color:${ok==null?'#c9d4e2':ok?'#b5f5c8':'#ffb4b4'}">${ok==null?'ℹ️':ok?'✅':'⚠️'} ${m}${id?'<span class="focgo">▶ 장면</span>':''}</div>`; }).join('');
+  return h; }
+function waistGraphs(){ document.querySelectorAll('canvas.wsg').forEach(c=>{ const Wd=TKD&&TKD.waist; if(!Wd) return; const g=c.getContext('2d'), w=c.width, h=c.height, n=Wd.n;
+  g.clearRect(0,0,w,h); const mx=Math.min(60,Math.max(15,...Wd.ev.map(e=>Math.abs(Wd.pt[e.i])+5))), X=i=>i/(n-1)*w, Y=v=>h/2-Math.max(-mx,Math.min(mx,v))/mx*(h/2-14);
+  Wd.ev.forEach(e=>{ const ok=wEvOk(e,Wd); g.fillStyle=ok==null?'rgba(160,170,185,.13)':ok?'rgba(82,224,122,.13)':'rgba(255,90,90,.13)'; g.fillRect(X(e.a),0,Math.max(2,X(e.i)-X(e.a)),h); });
+  g.strokeStyle='rgba(255,255,255,.18)'; g.lineWidth=1; g.beginPath(); g.moveTo(0,h/2); g.lineTo(w,h/2); g.stroke(); g.fillStyle='#8b98a8'; g.font='12px sans-serif'; g.fillText(`왼쪽 ${Math.round(mx)}°`,4,14); g.fillText(`오른쪽 ${Math.round(mx)}°`,4,h-4);
+  [[Wd.st,'#4cc3ff'],[Wd.pt,'#ff9f43']].forEach(([A,col])=>{ g.strokeStyle=col; g.lineWidth=2.4; g.beginPath(); A.forEach((v,i)=>i?g.lineTo(X(i),Y(v)):g.moveTo(X(i),Y(v))); g.stroke(); });
+  Wd.ev.forEach(e=>{ const ok=wEvOk(e,Wd); g.fillStyle=ok==null?'#a0aab9':ok?'#52e07a':'#ff5a5a'; g.beginPath(); g.arc(X(e.i),Y(Wd.pt[e.i]),5,0,7); g.fill(); });
+  const ci=Math.round(vtime()*AFPS); if(ci>=0&&ci<n){ g.fillStyle='#fff'; g.fillRect(X(ci)-1,0,2,h); }
+  c.onclick=ev=>{ const r=c.getBoundingClientRect(), i=Math.round((ev.clientX-r.left)/r.width*(n-1)); fz=null; video.pause(); video.currentTime=Math.max(0,i/AFPS); }; }); }
+/* 위에서 내려다본 허리 게이지: 흰 점선 = 돌기 전 방향, 주황 = 골반, 파랑 = 어깨, 화살표 = 골반이 돈 방향 */
+function drawWaistGauge(cx,cy,r,pa,sa,s,lbl){ const cl=v=>Math.max(-90,Math.min(90,v)); pa=cl(pa); sa=cl(sa); ctx.save(); ctx.shadowBlur=0; ctx.fillStyle='rgba(10,13,17,.8)'; ctx.beginPath(); ctx.arc(cx,cy,r+8*s,0,7); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.3)'; ctx.lineWidth=1.5*s; ctx.beginPath(); ctx.arc(cx,cy,r,0,7); ctx.stroke();
+  const bar=(deg,col,len,wd)=>{ const a=-deg*Math.PI/180, dx=Math.cos(a)*len, dy=Math.sin(a)*len; ctx.strokeStyle=col; ctx.lineWidth=wd*s; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(cx-dx,cy-dy); ctx.lineTo(cx+dx,cy+dy); ctx.stroke(); };
+  ctx.setLineDash([4*s,4*s]); bar(0,'rgba(255,255,255,.55)',r,2); ctx.setLineDash([]);
+  if(Math.abs(pa)>=3){ const a0=0, a1=-pa*Math.PI/180, rr=r*.82; ctx.strokeStyle='#ffd23f'; ctx.lineWidth=2.5*s; ctx.beginPath(); ctx.arc(cx,cy,rr,Math.min(a0,a1),Math.max(a0,a1)); ctx.stroke();
+    const tx=cx+Math.cos(a1)*rr, ty=cy+Math.sin(a1)*rr, d=pa>0?-1:1, ux=-Math.sin(a1)*d, uy=Math.cos(a1)*d; ctx.fillStyle='#ffd23f'; ctx.beginPath(); ctx.moveTo(tx+ux*7*s,ty+uy*7*s); ctx.lineTo(tx-uy*5*s-ux*2*s,ty+ux*5*s-uy*2*s); ctx.lineTo(tx+uy*5*s-ux*2*s,ty-ux*5*s-uy*2*s); ctx.fill(); }
+  bar(sa,'#4cc3ff',r*.95,5); bar(pa,'#ff9f43',r*.7,8); ctx.fillStyle='#e8eef5'; ctx.beginPath(); ctx.arc(cx,cy,4*s,0,7); ctx.fill();
+  const tb=(t,y,col,f)=>{ ctx.font=f; const w=ctx.measureText(t).width+10*s; ctx.fillStyle='rgba(10,13,17,.8)'; ctx.fillRect(cx-w/2,y-9*s,w,18*s); ctx.fillStyle=col; ctx.fillText(t,cx,y); };
+  ctx.textAlign='center'; ctx.textBaseline='middle'; const bf=`bold ${12*s}px sans-serif`;
+  tb(lbl||'위에서 본 허리',cy-r-18*s,'#e8eef5',`bold ${11*s}px sans-serif`); tb(`골반 ${Math.round(Math.abs(pa))}°`,cy+r+18*s,'#ff9f43',bf); tb(`어깨 ${Math.round(Math.abs(sa))}°`,cy+r+36*s,'#4cc3ff',bf); ctx.restore(); }
+/* 게이지 자리: 몸통 옆 빈 쪽 (얼굴·몸을 가리지 않게) */
+function waistGaugePos(pts,W,H,r,s){ const sh=[pts[11],pts[12]].filter(Boolean), hp=[pts[23],pts[24]].filter(Boolean); if(!sh.length) return null;
+  const xs=[...sh,...hp].map(p=>p.x), x0=Math.min(...xs), x1=Math.max(...xs), y=sh.reduce((a,p)=>a+p.y,0)/sh.length, m=r+14*s;
+  const left=x0>W-x1, cx=left?Math.max(m,Math.min(x0-m,W-m)):Math.min(W-m,Math.max(x1+m,m)); return {cx,cy:Math.max(r+34*s,Math.min(H-r-50*s,y+r*.3))}; }
+/* 영상 위 게이지는 허리를 돌리는 동안에만 (계속 떠 있으면 낙서처럼 보여서) */
+function drawWaistLive(){ if(!$('waistOn')||!$('waistOn').checked||!TKD||!TKD.waist||!pose||focShown()) return; const Wd=TKD.waist, i=Math.round(vtime()*AFPS); if(i<0||i>=Wd.n) return;
+  const e=Wd.ev.find(e=>i>=e.a&&i<=e.i+Math.round(.6*Wd.fps)&&(e.amp>=wAmp(Wd)||e.slow)); if(!e) return; if((TKD.kicks||[]).some(k=>i>=k.s-3&&i<=k.e+3)) return; // 발차기 중엔 발차기 그림만
+  const W=cv.width,H=cv.height, s=Math.max(.5,cv.width/(cv.getBoundingClientRect().width||cv.width))*.95, hd=pose[0]; if(!hd) return;
+  const r=32*s, G=waistGaugePos(pose.map(p=>p&&{x:p.x*W,y:p.y*H}),W,H,r,s); if(!G) return; const k=Math.min(i,e.j>e.i?e.j:e.i);
+  drawWaistGauge(G.cx,G.cy,r,Wd.P[Math.min(i,e.i)]-Wd.P[e.a],Wd.S[k]-Wd.S[e.a],s,`허리 ${e.sg>0?"왼쪽":"오른쪽"}으로`); }
+
+/* ---------- ⚔ 대결: 지금 vs 예전 기록(더미) — 같은 동작끼리 점수로 맞대결 ----------
+   지금 영상의 동작 하나하나를 시간 맞춤(DTW)으로 예전 영상의 같은 동작과 짝지어, 3점 넘게 높은 쪽이 이겨요 */
+let DUEL=null;
+function duelActs(R){ if(!R) return []; const A=[];
+  (R.arms||[]).forEach(a=>{ if(a.score!=null&&a.imp!=null) A.push({c:a.kind==='punch'?'지르기':'막기',i:a.imp,a:a.a,e:a.e,sc:a.score}); });
+  (R.kicks||[]).forEach(k=>{ if(k.score!=null) A.push({c:'발차기',i:k.pi!=null&&k.pi>=0?k.pi:k.s,a:k.s,e:k.e,sc:k.score}); });
+  (R.steps||[]).forEach(s=>{ if(s.score!=null) A.push({c:'서기',i:s.i1,a:s.i0,e:s.i1,sc:s.score}); });
+  return A.sort((x,y)=>x.i-y.i); }
+function duelGet(){ if(!cmp||!cmp.map||!TKD||!TKDT||!$('cmpSrc')||$('cmpSrc').value!=='vid') return null;
+  if(DUEL&&DUEL.c===cmp&&DUEL.t===TKD&&DUEL.t2===TKDT) return DUEL;
+  const M=duelActs(TKD), O=duelActs(TKDT), tol=Math.round(.6*AFPS), used=new Set(), pairs=[], L=cmp.map.length;
+  M.forEach(m=>{ const j=cmp.map[Math.max(0,Math.min(L-1,m.i))]; let best=-1,bd=1e9; O.forEach((o,q)=>{ if(used.has(q)||o.c!==m.c) return; const d=Math.abs(o.i-j); if(d<=tol&&d<bd){ bd=d; best=q; } }); if(best>=0){ used.add(best); pairs.push({m,o:O[best]}); } });
+  let w=0,l=0,d=0; pairs.forEach(p=>{ const df=p.m.sc-p.o.sc; p.r=df>3?1:df<-3?-1:0; if(p.r>0) w++; else if(p.r<0) l++; else d++; });
+  DUEL={c:cmp,t:TKD,t2:TKDT,pairs,w,l,d}; return DUEL; }
+const duelNames=()=>{ const who=CMPLBL||'라이벌'; return {who,me:who==='라이벌'?'원생':'지금'}; };
+function drawDuel(){ if(!$('duelOn')||!$('duelOn').checked||focShown()) return false; const D=duelGet(); if(!D||!D.pairs.length) return false;
+  const s=Math.max(.5,cv.width/Math.max(1,cv.getBoundingClientRect().width||cv.width))*.95, i=curIdx(vtime()), {who,me}=duelNames(), oc=cmpHex(), op=who.replace(/ 기록$/,''); ctx.save(); ctx.shadowBlur=0; ctx.textBaseline='middle'; ctx.textAlign='left';
+  const box=(x,y,w,h,col)=>{ ctx.fillStyle='rgba(8,10,14,.78)'; ctx.beginPath(); ctx.roundRect?ctx.roundRect(x,y,w,h,10*s):ctx.rect(x,y,w,h); ctx.fill(); if(col){ ctx.strokeStyle=col; ctx.lineWidth=2*s; ctx.stroke(); } };
+  ctx.font=`900 ${18*s}px sans-serif`; const t0='⚔ ', t1=`${me} ${D.w}승`, tv2=' : ', t2=`${D.l}승 ${op}`, w0=ctx.measureText(t0).width, w1=ctx.measureText(t1).width, wv=ctx.measureText(tv2).width, w2=ctx.measureText(t2).width, x=10*s, y=10*s, h=38*s, W0=w0+w1+wv+w2+24*s;
+  box(x,y,W0,h,D.w>D.l?'#52e07a':D.l>D.w?oc:'rgba(255,255,255,.4)'); let xx=x+12*s;
+  ctx.fillStyle='#ffd23f'; ctx.fillText(t0,xx,y+h/2); xx+=w0; ctx.fillStyle='#b5f5c8'; ctx.fillText(t1,xx,y+h/2); xx+=w1; ctx.fillStyle='#e8eef5'; ctx.fillText(tv2,xx,y+h/2); xx+=wv; ctx.fillStyle=oc; ctx.fillText(t2,xx,y+h/2);
+  const p=D.pairs.find(p=>i>=p.m.a-Math.round(.2*AFPS)&&i<=p.m.e+Math.round(.7*AFPS));
+  if(p){ const r=p.r>0?`${me} 승 🏆`:p.r<0?`${op} 승`:'비김 🤝', t=`이번 ${p.m.c}  ${Math.round(p.m.sc)} : ${Math.round(p.o.sc)}  ${r}`; ctx.font=`bold ${15*s}px sans-serif`; ctx.textAlign='left';
+    const w=ctx.measureText(t).width+24*s; box(x,y+h+6*s,w,32*s,p.r>0?'#52e07a':p.r<0?oc:'rgba(255,255,255,.4)'); ctx.fillStyle=p.r>0?'#b5f5c8':p.r<0?oc:'#e8eef5'; ctx.fillText(t,x+12*s,y+h+22*s); }
+  ctx.restore(); return true; }
+function duelHtml(){ const D=duelGet(); if(!D||!D.pairs.length) return ''; const {who,me}=duelNames();
+  return `<div class="fchip" style="cursor:default"><b>⚔ 동작마다 대결</b> <span class="sub">같은 동작끼리 점수를 맞대 봤어요 (3점 넘게 높으면 승) · 누르면 그 장면으로 가요</span>
+    <div style="font-size:16px;margin:6px 0"><b style="color:#52e07a">${me} ${D.w}승</b> · 무 ${D.d} · <b style="color:${cmpHex()}">${who} ${D.l}승</b></div>`+
+    D.pairs.map(p=>`<div class="foc" data-t="${(Math.max(0,p.m.a)/AFPS).toFixed(3)}" style="color:${p.r>0?'#b5f5c8':p.r<0?'#ffcf9a':'#c9d4e2'}">${p.r>0?'🏆':p.r<0?'😤':'🤝'} ${(p.m.i/AFPS).toFixed(1)}초 ${p.m.c} · ${me} <b>${Math.round(p.m.sc)}</b> : <b>${Math.round(p.o.sc)}</b> ${who}<span class="focgo">▶ 장면</span></div>`).join('')+`</div>`; }
+
 /* ---------- 🎯 장면 코칭: 진단 항목을 누르면 그 장면으로 가서 영상 위에 그림으로 설명 ----------
    잘한 점·고칠 점 모두 → 지금 각도 / 목표 각도(초록 점선) / 궤적 / 무게중심을 영상 위에 그려 줘요 */
 const MK=(k,s)=>{ const o=new String(s); o.k=k; return o; }; // 문구 + 무엇에 대한 문구인지(k)
@@ -2257,12 +2430,14 @@ const HOW={
  settle:{t:'딛고 멈추기',g:'딛은 뒤 몸(초록 길)이 바로 멈췄어요.',b:'딛은 뒤 몸(초록 길)이 계속 움직여요. 딛는 순간 서기로 몸을 받아 멈추세요 (천천히 하는 동작은 예외).'},
  lean:{t:'상체 세우기',g:'상체가 곧게 서 있어요.',b:'상체가 기울었어요. 초록 점선까지 상체를 세우세요.'},
  hipLead:{t:'골반이 먼저 이동',g:'골반(보라)이 발(파랑)보다 먼저 출발했어요 = 허리로 이동했어요.',b:'발(파랑)이 먼저 나가고 골반(보라)이 따라가요. 허리로 먼저 밀고 발이 따라오게 하세요.'},
+ waist3:{t:'허리 돌리기 연습',g:'',b:'',n:'천천히 골반을 좌우로 돌리는 연습 구간이에요. 몸 옆 「위에서 본 허리」 동그라미에서 주황 막대(골반)가 얼마나 돌았는지, 파랑 막대(어깨)가 같이 따라가는지 보세요. 어깨는 가만히 두고 골반만 돌릴수록 허리 힘이 좋아져요.'},
+ waist2:{t:'허리쓰임 (골반 회전)',g:'골반(주황 막대)이 충분히 돌고 어깨(파랑 막대)가 따라왔어요. 몸 옆 「위에서 본 허리」 동그라미: 흰 점선 = 돌기 전 방향, 노란 화살표 = 골반이 돈 방향과 양.',b:'골반이 조금만 돌거나 어깨(팔)가 먼저 돌았어요. 몸 옆 동그라미에서 주황 막대(골반)가 먼저 크게 돌고, 파랑 막대(어깨)가 뒤따라오게 해 보세요.'},
  hipOff:{t:'골반 중립',g:'골반(○)이 어깨–발 선(흰 점선) 위에 있어요.',b:'골반(○)이 어깨–발 선(흰 점선)에서 벗어났어요. 엉덩이를 빼지도 말지도 말고 선 위에 두세요.'}
 };
 function focBuild(kind,o,m,ok,R){ if(!o||!m||!track) return null; const key=m.k; if(!key) return null; R=R||{fps:AFPS,BH:1.6};
-  let f=null; try{ f=kind==='arm'?focArm(o,R,key):kind==='kick'?focKick(o,R,key):kind==='step'?focStep(o,R,key):kind==='ktech'?focKT(o,key):null; }catch(e){ console.error(e); return null; }
+  let f=null; try{ f=kind==='arm'?focArm(o,R,key):kind==='kick'?focKick(o,R,key):kind==='step'?focStep(o,R,key):kind==='ktech'?focKT(o,key):kind==='waist'?focWaist(o,R):null; }catch(e){ console.error(e); return null; }
   if(!f) return null; const H=HOW[key]||{t:'',g:'',b:''};
-  f.ok=ok; f.s=String(m); f.title=H.t; f.how=ok===false?H.b:ok===true?H.g:(H.g||H.b); f.kind=kind; f.key=key;
+  f.ok=ok; f.s=String(m); f.title=H.t; f.how=ok===false?H.b:ok===true?H.g:(H.n||H.g||H.b); f.kind=kind; f.key=key;
   const n=track.length, cl=x=>Math.max(0,Math.min(n-1,Math.round(x))); f.i=cl(f.i); f.a=cl(f.a); f.b=cl(Math.max(f.b,f.i)); return f; }
 function focArm(A,R,key){ const k=A.k,o=1-k,cat=A.kind==='punch'?'punch':'block',E=ELITE[cat], wr=15+k, wo=15+o;
   const f={i:A.imp,a:A.a,b:A.e,src:`${LEGN[k]}손 ${A.sub||''} · ${(A.imp/R.fps).toFixed(1)}초`}, V=[];
@@ -2285,9 +2460,11 @@ function focArm(A,R,key){ const k=A.k,o=1-k,cat=A.kind==='punch'?'punch':'block'
     case 'transfer': f.a=A.imp-.5*R.fps; V.push({t:'path',j:[23,24],a:A.imp-.5*R.fps,b:A.imp+3,c:'#7be07b',arrow:true}); f.tgt='치는 순간 서기로 몸을 "탁" 멈추기'; break;
     default: return null; }
   f.viz=V; return f; }
+function focWaist(o,R){ const e=o.e, Wd=o.Wd, fps=Wd.fps||R.fps||AFPS; return {i:e.i,a:Math.max(0,e.a-Math.round(.2*fps)),b:Math.min(Wd.n-1,e.i+Math.round(.5*fps)),src:`${(e.i/fps).toFixed(1)}초 허리 회전`,
+  tgt:e.slow?'천천히 돌리는 연습: 어깨는 그대로 두고 골반(벨트 매듭)만 좌우로 돌려 보기':`골반(주황)을 먼저 ${wAmp(Wd)}° 넘게 확 돌리고 어깨(파랑)가 따라오게 · 끝에서 ${WOK.stop}초 안에 탁 멈추기`,viz:[{t:'waist',Wd,e}]}; }
 function kFoldT(K){ const fe=(K.lean!=null&&K.lean>=60?ELITE.kickHigh:ELITE.kickLow).fold; return K.guess==='side'?Math.max(60,fe[1]+5):Math.max(60,fe[2]+5); }
 function focKick(K,R,key){ const kk=K.k, sk=1-kk, f={i:K.pi,a:K.s,b:K.e,src:`${LEGN[kk]}발 ${KTYPES[K.guess]||'발차기'} · ${(K.pi/R.fps).toFixed(1)}초`};
-  const V=[{t:'kpath',j:29+kk,a:K.s,b:K.e,ci:K.ci,pi:K.pi}];
+  const V=key==='path'||key==='line'?[{t:'kpath',j:29+kk,a:K.s,b:K.e,ci:K.ci,pi:K.pi}]:[];
   switch(key){
     case 'seesaw': f.i=K.b; V.push({t:'trunk',cur:K.leanLand,tgt:EL.leanLand(),lab:'몸통'}); f.tgt=`다리가 내려올 때 몸통 ${Math.round(EL.leanLand())}° 안 (모범 ${Math.round(ELITE.kickHigh.leanLand[1])}°)`; break;
     case 'lift': f.i=K.ci; V.push({t:'lift',kk,cur:K.lift,tgt:90}); f.tgt='무릎을 허리 높이 이상 (90° 이상)'; break;
@@ -2352,7 +2529,7 @@ function drawFoc(){
     ctx.fillStyle=c; ctx.fillText(t,x,y); ctx.restore(); };
   const rot=(v,a)=>({x:v.x*Math.cos(a)-v.y*Math.sin(a),y:v.x*Math.sin(a)+v.y*Math.cos(a)});
   const path=(j,a,b,c,w=4,arrow=false)=>{ a=Math.max(0,Math.round(a)); b=Math.min(n-1,Math.round(b)); sty(c,w); ctx.beginPath(); let on=false, last=null, prev=null;
-    for(let k=a;k<=b;k++){ const p=P(k,j); if(!p){ on=false; continue; } if(!on){ ctx.moveTo(p.x,p.y); on=true; } else ctx.lineTo(p.x,p.y); prev=last; last=p; } ctx.stroke();
+    for(let k=a;k<=b;k++){ const p=P(k,j); if(!p){ on=false; continue; } if(last&&Math.hypot(p.x-last.x,p.y-last.y)>H*.18) on=false; if(!on){ ctx.moveTo(p.x,p.y); on=true; } else ctx.lineTo(p.x,p.y); prev=last; last=p; } ctx.stroke();
     if(arrow&&last&&prev){ const an=Math.atan2(last.y-prev.y,last.x-prev.x); ctx.fillStyle=c; ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(last.x-12*s*Math.cos(an-.5),last.y-12*s*Math.sin(an-.5)); ctx.lineTo(last.x-12*s*Math.cos(an+.5),last.y-12*s*Math.sin(an+.5)); ctx.fill(); }
     const cur=i>=a&&i<=b?P(i,j):null; dot(cur,'#fff',5); };
   // 각도 그리기: 세 점 A-B-C, 지금 값(측정값)과 목표 범위 → 목표 쪽으로 돌린 초록 점선
@@ -2377,7 +2554,7 @@ function drawFoc(){
   ctx.save(); ctx.lineCap='round'; ctx.lineJoin='round'; ctx.shadowColor='rgba(0,0,0,.85)'; ctx.shadowBlur=5*s;
   (f.viz||[]).forEach(v=>{ try{ switch(v.t){
     case 'path': path(v.j,v.a,v.b,v.c||col,4,v.arrow); break;
-    case 'kpath': { const seg=(a,b,c,d)=>{ a=Math.max(0,Math.round(a)); b=Math.min(n-1,Math.round(b)); sty(c,4,d); ctx.beginPath(); let on=false; for(let k=a;k<=b;k++){ const p=P(k,v.j); if(!p){on=false;continue} if(!on){ctx.moveTo(p.x,p.y);on=true}else ctx.lineTo(p.x,p.y);} ctx.stroke(); ctx.setLineDash([]); };
+    case 'kpath': { const seg=(a,b,c,d)=>{ a=Math.max(0,Math.round(a)); b=Math.min(n-1,Math.round(b)); sty(c,4,d); ctx.beginPath(); let on=false, lp=null; for(let k=a;k<=b;k++){ const p=P(k,v.j); if(!p){on=false;continue} if(lp&&Math.hypot(p.x-lp.x,p.y-lp.y)>H*.18) on=false; if(!on){ctx.moveTo(p.x,p.y);on=true}else ctx.lineTo(p.x,p.y); lp=p;} ctx.stroke(); ctx.setLineDash([]); };
       seg(v.a,v.ci,'#4cc3ff',8); seg(v.ci,v.pi,'#ffd23f',0); seg(v.pi,v.b,'rgba(220,220,220,.8)',8);
       const Cp=P(v.ci,v.j), Pp=P(v.pi,v.j); ring(Cp,'#4cc3ff',10); if(Cp) tag('접기',Cp.x+30*s,Cp.y-14*s,'#4cc3ff',13); dot(Pp,'#ffd23f',7); if(Pp) tag('최고',Pp.x+30*s,Pp.y-14*s,'#ffd23f',13);
       dot(C(v.j),'#fff',5); break; }
@@ -2413,6 +2590,11 @@ function drawFoc(){
         tag(`⊕ 앞발 체중 ${Math.round(v.cur*100)}%`,p.x,p.y-30*s,c,15); } break; }
     case 'gap': { const he=C(29+v.kk), th={x:0,y:0}, H0=C(23+v.kk), Kn=C(25+v.kk); if(!he||!H0||!Kn) break; th.x=(H0.x+Kn.x)/2; th.y=(H0.y+Kn.y)/2; ln(he,th,'#c084fc',4,6); dot(he,'#c084fc',6); tag('뒤꿈치 ↔ 허벅지 뒤',(he.x+th.x)/2,(he.y+th.y)/2-18*s,'#d8b4fe',14); break; }
     case 'ideal': { const a=P(v.a,v.j), b=P(v.b,v.j); ln(a,b,GOOD,5,9); if(a&&b) tag('이 선처럼 곧게',(a.x+b.x)/2,(a.y+b.y)/2-22*s,GOOD,14); break; }
+    case 'waist': { const l=C(23), r2=C(24), a=C(11), b=C(12), e2=(p,q,k)=>({x:p.x+(p.x-q.x)*k,y:p.y+(p.y-q.y)*k});
+      if(a&&b){ ln(e2(a,b,.35),e2(b,a,.35),'#4cc3ff',6); tag('어깨',e2(a,b,.45).x,e2(a,b,.45).y,'#4cc3ff',13); }
+      if(l&&r2){ ln(e2(l,r2,.6),e2(r2,l,.6),'#ff9f43',8); tag('골반',e2(l,r2,.7).x,e2(l,r2,.7).y,'#ff9f43',13); }
+      const hd=C(0), Wd=v.Wd, e=v.e; if(hd&&Wd&&i>=0&&i<Wd.n){ const rr=40*s, ii=e?Math.max(e.a,Math.min(i,e.i)):i, k=e?Math.max(e.a,Math.min(i,Math.max(e.i,e.j))):i, G=waistGaugePos([...Array(25)].map((_,q)=>C(q)),W,H,rr,s);
+        if(G) drawWaistGauge(G.cx,G.cy,rr,e?Wd.P[ii]-Wd.P[e.a]:Wd.pt[i],e?Wd.S[k]-Wd.S[e.a]:Wd.st[i],s,e?`허리 ${e.sg>0?'왼쪽':'오른쪽'}으로`:''); } break; }
     case 'hipoff': { const sh=C('sh'), ft=C([29,30]), hp=C([23,24]); ln(sh,ft,'rgba(255,255,255,.85)',3,7); ring(hp,col,14); break; }
   } }catch(e){ console.error(e); } });
   ctx.restore();
@@ -2553,7 +2735,9 @@ function refreshTkd(){ const el=$('tkdRep'); if(!el) return; const R=TKD; focCle
   h+=`<div class="fchip" style="cursor:default"><b>✅ 코칭 원칙 점검</b>${pr.filter(x=>x[1]).map(([nm,r,,kind,key])=>{ const o=r.fail||r.pass, ok=!r.fail, fi=o?focBuild(kind,o,MK(key,ok?`${nm} — 잘된 예 (${r.p}% 맞춤)`:`${nm} — 기준에 못 미친 예 (${r.p}% 맞춤)`),ok,R):null, id=fi?focAdd('t',fi):'';
       return `<div class="foc"${id?` data-foc="${id}"`:''}>${r.p>=80?'✅':r.p>=50?'🟡':'⚠️'} ${nm} <b style="color:#ffd23f">${r.p}%</b> <span class="sub">(${r.n}회)</span>${id?'<span class="focgo">▶ 장면</span>':''}</div>`; }).join('')||'<div class="sub">해당 동작이 아직 없어요</div>'}
     <div class="sub">골반 앞·뒤 기울기는 관절 점 33개로는 뼈를 직접 볼 수 없어 "엉덩이가 어깨–발 선에서 앞뒤로 벗어난 정도"로 추정해요.</div></div>`;
-  // 🌀 허리쓰임 요약
+  // 🌀 허리쓰임 (영상 전체 골반·어깨 회전)
+  h+=`<div class="fchip" style="cursor:default"><b>🌀 허리쓰임 — 골반·어깨 회전 (영상 전체)</b>${waistHtml(R.waist,R)}</div>`;
+  // 🌀 허리쓰임 요약 (지르기·막기 순간)
   { const PW=arms.filter(a=>a.W8), m=f=>mean(PW,f), hs=mean(S,x=>x.hipLead);
     if(PW.length||hs!=null) h+=`<div class="fchip" style="cursor:default"><b>🌀 허리쓰임 — "품새의 힘은 허리에서 나온다"</b>
       ${PW.length?`<div>골반 회전 평균 <b style="color:#ffd23f">${Math.round(m(a=>a.W8.rot))}°</b> · 골반–어깨 꼬임 <b style="color:#ffd23f">${Math.round(m(a=>a.W8.xf))}°</b></div>
@@ -2639,12 +2823,13 @@ function refreshTkd(){ const el=$('tkdRep'); if(!el) return; const R=TKD; focCle
     const scRow=(nm,a,b)=>`<tr><td style="text-align:left">${nm}</td><td style="color:${a!=='-'&&b!=='-'&&a>b?'#7be07b':'#fff'}">${a}</td><td style="color:${a!=='-'&&b!=='-'&&b>a?'#7be07b':'#fff'}">${b}</td></tr>`;
     h+=`<details class="pan"><summary>${rv?`👥 지금 vs ${who} — 어디서 더 잘했나`:'🎬 비교 영상 대비 부족한 점'}</summary>
       ${rv?`<div class="fchip" style="cursor:default"><b>📊 점수 맞대결</b> <span class="sub">(${me} 쪽이 더 좋은 항목 ${win}개 · ${who} 쪽이 더 좋은 항목 ${lose}개)</span><table style="width:100%;font-size:13px;text-align:center;border-collapse:collapse"><tr style="color:#9aa4b2"><td style="text-align:left">점수</td><td>${me}</td><td>${who}</td></tr>${scRow('서기',sc(S),sc2(T2.steps))}${scRow('지르기',sc(P),sc2(P2))}${scRow('막기',sc(Bk),sc2(P2b))}${scRow('발차기',sc(K),sc2(K2))}</table></div>`:''}
+      ${rv?duelHtml():''}
       ${rows.length?`<table style="width:100%;font-size:12px;text-align:center;border-collapse:collapse"><tr style="color:#9aa4b2"><td style="text-align:left">항목</td><td>${me}</td><td>${who}</td><td></td></tr>${rows.map(r=>`<tr><td style="text-align:left">${r.nm}</td><td style="color:${r.worse?'#ff9a9a':r.better?'#7be07b':'#fff'}">${r.fmt(r.a)}</td><td style="color:${r.better?'#ff9a9a':r.worse?'#7be07b':'#fff'}">${r.fmt(r.b)}</td><td>${r.worse?(rv?`👥 ${who} 우세 · `:'⚠️ ')+TKDR[r.dr].t:r.better?(rv?'🙂 지금이 더 좋음':'🌟 더 좋음'):'✅ 비슷'}</td></tr>`).join('')}</table>`:'<div class="sub">비교할 동작이 아직 없어요</div>'}
       <div class="sub">속도는 몸 크기가 달라도 비교되게 "몸통 길이/초"로 바꿨어요. 원생이 부족한 항목은 아래 「보강할 부위」에 올라가요. 원생 키와 「라이벌 키」를 정확히 넣으면 더 정확해요.</div></details>`; }
   else h+=`<div class="sub" style="margin:4px 0">👥 「비교 겹쳐보기」에서 원생·라이벌 영상을 올리면 누가 어디서 더 잘했는지 맞대결 결과가 여기 나와요.</div>`;
   // 6) 처방
   h+=`<details class="pan"><summary>🎯 보강할 부위 (많이 지적된 순)</summary>${tkdDrills(allDr)||'<div class="sub">지적된 점이 없어요 👏 속도·높이를 올리는 단계로 가요</div><div class="sub">유튜브·구글은 「부위 운동」, 인스타는 「#부위」로 찾아요.</div>'+tkdDrills(['speed','kickHip','flex'],3)}</details>`;
-  el.innerHTML=h; }
+  el.innerHTML=h; try{ waistGraphs(); }catch(e){} }
 
 function kType(t){ const u=KTSEL[t.j]; return u&&u!=='auto'?u:t.guess; }
 function kChecks(t){ const ty=kType(t), sp=KSPEC[ty]||KSPEC.etc, R=[], cm=v=>t.M.m?`${Math.round(v*100)}cm`:`${Math.round(v)}px`;
@@ -2690,11 +2875,8 @@ function drawKickTech(){ // 발차기 궤적 + 접기 구간(무릎 올림 각�
   const seg=(a,b,col,dash)=>{ ctx.strokeStyle=col; ctx.setLineDash(dash?[8*s,6*s]:[]); ctx.lineWidth=4*s; ctx.beginPath(); let on=false;
     for(let k=a;k<=b;k++){ const p=t.trail[k-t.s]; if(!p){on=false;continue} if(!on){ctx.moveTo(p.x*W,p.y*H);on=true}else ctx.lineTo(p.x*W,p.y*H); } ctx.stroke(); };
   ctx.shadowColor='rgba(0,0,0,.8)'; ctx.shadowBlur=5*s;
-  seg(t.s,t.ci,'#4cc3ff',true); seg(t.ci,t.pi,'#ffd23f',false); seg(t.pi,t.e,'rgba(220,220,220,.8)',true); ctx.setLineDash([]);
+  ctx.setLineDash([]); // 궤적 선은 AI가 튄 점까지 이어 낙서처럼 보여서 그리지 않아요
   const C=t.trail[t.ci-t.s], P=t.trail[t.pi-t.s], cur=t.trail[i-t.s];
-  if(C){ ctx.strokeStyle='#4cc3ff'; ctx.lineWidth=3*s; ctx.beginPath(); ctx.arc(C.x*W,C.y*H,10*s,0,7); ctx.stroke(); label('접기',C.x*W+12*s,C.y*H-10*s,'#4cc3ff',13*s); }
-  if(P){ ctx.fillStyle='#ffd23f'; ctx.beginPath(); ctx.arc(P.x*W,P.y*H,6*s,0,7); ctx.fill(); }
-  if(cur){ ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(cur.x*W,cur.y*H,5*s,0,7); ctx.fill(); }
   ctx.shadowBlur=0;
   // 접기 구간이면: 무릎 올림 각도 + 뒤꿈치–허벅지 간격 표시 (발차기 각도 대신)
   const chamber=i<=Math.min(t.pi-1,t.ci+Math.round(.08*AFPS)), f=t.F[i-t.s];
@@ -2888,6 +3070,7 @@ function anchor(l,w,h){
 const cmpHex=()=>{ const v=($('cmpColor')&&$('cmpColor').value)||'#ff9f1c'; return /^#[0-9a-f]{6}$/i.test(v)?v:'#ff9f1c'; };
 const cmpRGBA=a=>{ const h=cmpHex(); return `rgba(${parseInt(h.slice(1,3),16)},${parseInt(h.slice(3,5),16)},${parseInt(h.slice(5,7),16)},${a})`; };
 function drawScore(){
+  if(drawDuel()) return;
   if(!cmp||!$('scoreOn').checked) return;
   const v=cmp.fs[curIdx(vtime())]; if(!(v>=0)) return;
   const s=sc(), txt=`일치도 ${Math.round(v)}%`;
@@ -2919,8 +3102,8 @@ function drawPip(){
 const PERR=new Set();
 const safe=f=>{ ctx.save(); try{ f(); ctx.restore(); }catch(e){ const k=f.name||'draw'; if(!PERR.has(k)){ PERR.add(k); console.error(k,e); } for(let j=0;j<12;j++) ctx.restore(); } };
 function paintOverlays(){
-  if(track) pose=poseAt(track,vtime());
-  [drawSkelDim,drawTvOver,drawTrails,drawGhost,drawSkeleton,drawBodyMuscles,drawPose,drawForce,drawGRF,drawShift,drawWeight,drawBalance,drawKick,drawCoachMark,drawFoc].filter(fn=>!focShown()||![drawTrails,drawGhost,drawForce,drawGRF,drawShift,drawWeight,drawBalance,drawKick,drawCoachMark].includes(fn)).forEach(safe);
+  if(track) pose=poseAt(track,vtime()); BACKV=backAt(vtime());
+  [drawSkelDim,drawTvOver,drawTrails,drawGhost,drawSkeleton,drawBodyMuscles,drawPose,drawForce,drawGRF,drawShift,drawWeight,drawBalance,drawKick,drawCoachMark,drawWaistLive,drawFoc].filter(fn=>!focShown()||![drawTrails,drawGhost,drawForce,drawGRF,drawShift,drawWeight,drawBalance,drawKick,drawCoachMark].includes(fn)).forEach(safe);
   safe(()=>{ hud(); drawPip(); drawScore(); });
   anns.filter(a=>vis(a)).forEach(a=>safe(()=>drawAnn(a)));
 }
@@ -3370,7 +3553,7 @@ function pickUI(snap,ps){
     $('pickAll').onclick=()=>{ if(sel.size===ps.length) sel.clear(); else ps.forEach(p=>sel.add(p.id)); draw(); };
     $('pickGo').onclick=()=>done([...sel]);
     $('pickCancel').onclick=()=>done(null);
-    $('pickTxt').innerHTML=`🧑‍🤝‍🧑 화면에 <b>${ps.length}명</b>이 보여요. 분석할 사람을 눌러 고르세요<br><span class="sub">한 명만도, 여러 명도 고를 수 있어요 · 버전 10-09 12시30분</span>`;
+    $('pickTxt').innerHTML=`🧑‍🤝‍🧑 화면에 <b>${ps.length}명</b>이 보여요. 분석할 사람을 눌러 고르세요<br><span class="sub">한 명만도, 여러 명도 고를 수 있어요 · 버전 10-09 15시</span>`;
     box.hidden=false; fit(); window.addEventListener('resize',fit); draw();
   });
 }
@@ -3950,22 +4133,26 @@ function computeBalance(){
   BAL=null; if(!gb||!track||!mpp) return;
   const W=video.videoWidth,H=video.videoHeight,n=gb.n, M=kMode(), out=new Array(n).fill(null);
   for(let i=0;i<n;i++){ const q=gb.f[i], l=track[i]&&track[i].lm; if(!q||!l) continue;
-    const ks=[0,1].filter(k=>q.ft[k]), com={x:q.cx*W,y:q.cy*H};
+    let FT=q.ft; const ks=[0,1].filter(k=>FT[k]), com={x:q.cx*W,y:q.cy*H};
+    if(!ks.length){ // 접지 판정이 놓친 '가만히 서 있는' 장면: 두 발이 거의 안 움직이고 바닥 높이에 있으면 두 발 딛음으로 봐요
+      const R1=Math.round(AFPS), cys=[]; for(let j=Math.max(0,i-R1);j<=Math.min(n-1,i+R1);j++) if(gb.f[j]) cys.push(gb.f[j].cy); cys.sort((x,y)=>x-y);
+      const rise=cys.length?(cys[cys.length>>1]-q.cy)*H*mpp:1, still=rise<.05&&l[29]&&l[30]?[0,1]:[]; // 몸이 떠오르지 않았으면 공중이 아니에요
+      if(still.length===2){ FT=[{stage:'flat',fy:.5,x:l[29].x},{stage:'flat',fy:.5,x:l[30].x}]; ks.push(0,1); } }
     if(!ks.length){ out[i]={air:true,com}; continue; }
     const xs=[]; let floorY=-1e9,cop=0,cw=0;
-    ks.forEach(k=>{ const st=q.ft[k].stage, P=[]; if(st!=='toe') P.push(l[29+k]); if(st!=='heel') P.push(l[31+k]);
+    ks.forEach(k=>{ const st=FT[k].stage, P=[]; if(st!=='toe') P.push(l[29+k]); if(st!=='heel') P.push(l[31+k]);
       const V=P.filter(p=>p&&(p.visibility??1)>.1); V.forEach(p=>{ xs.push(p.x*W); floorY=Math.max(floorY,p.y*H); });
-      const fx=V.length?V.reduce((a,p)=>a+p.x*W,0)/V.length:q.ft[k].x*W, w=Math.max(.05,q.ft[k].fy); cop+=fx*w; cw+=w; });
+      const fx=V.length?V.reduce((a,p)=>a+p.x*W,0)/V.length:FT[k].x*W, w=Math.max(.05,FT[k].fy); cop+=fx*w; cw+=w; });
     if(!xs.length) continue;
     let bmin=Math.min(...xs), bmax=Math.max(...xs); if((bmax-bmin)*mpp<.04){ const c=(bmin+bmax)/2; bmin=c-.02/mpp; bmax=c+.02/mpp; }
     cop/=cw;
     const hgt=Math.max(.3,(floorY-com.y)*mpp), w0=Math.sqrt(GRAV/hgt), xcom=com.x+(q.vx||0)/w0/mpp;
     const mos=Math.min(xcom-bmin,bmax-xcom)*mpp, cin=Math.min(com.x-bmin,bmax-com.x)*mpp;
     let top=null;
-    if(M.d3){ const P=[]; ks.forEach(k=>{ const he=kPt(l,29+k,M),to=kPt(l,31+k,M), ax={x:to.x-he.x,z:to.z-he.z}, L=Math.hypot(ax.x,ax.z)||1, nx=-ax.z/L*.045, nz=ax.x/L*.045, st=q.ft[k].stage;
+    if(M.d3){ const P=[]; ks.forEach(k=>{ const he=kPt(l,29+k,M),to=kPt(l,31+k,M), ax={x:to.x-he.x,z:to.z-he.z}, L=Math.hypot(ax.x,ax.z)||1, nx=-ax.z/L*.045, nz=ax.x/L*.045, st=FT[k].stage;
         (st==='toe'?[to]:st==='heel'?[he]:[he,to]).forEach(p=>P.push({x:p.x+nx,y:p.z+nz},{x:p.x-nx,y:p.z-nz})); });
       const hp=hull2(P), c=com3(l,M), cq={x:c.x,y:c.z}; top={poly:hp,com:cq,d:polySigned(hp,cq)}; }
-    out[i]={bmin,bmax,floorY,com,cop,xcom,mos,cin,single:ks.length===1,kick:ks.length===1&&!!q.ft[ks[0]].kick,len:(bmax-bmin)*mpp,cc:Math.abs(com.x-cop)*mpp,top};
+    out[i]={bmin,bmax,floorY,com,cop,xcom,mos,cin,single:ks.length===1,kick:ks.length===1&&!!FT[ks[0]].kick,len:(bmax-bmin)*mpp,cc:Math.abs(com.x-cop)*mpp,top};
   }
   // 요약
   const C=out.filter(b=>b&&!b.air), S0=C.filter(b=>b.single), SK=S0.filter(b=>b.kick), S=SK.length>=3?SK:S0, D=C.filter(b=>!b.single);
@@ -3979,63 +4166,45 @@ function computeBalance(){
 function refreshBalRep(){ const el=$('balRep'); if(!el) return;
   if(!BAL||!$('balOn').checked||!BAL.sum.n){ el.innerHTML=''; el.hidden=true; return; } el.hidden=false;
   const s=BAL.sum, cm=v=>`${Math.round(v*100)}cm`, row=(ok,nm,val,msg,t)=>`<div${t!=null?` class="chip" data-t="${(t/AFPS).toFixed(3)}" style="display:block;margin:3px 0;border-radius:8px"`:''}>${ok==null?'ℹ️':ok?'✅':'⚠️'} <b>${nm}</b> <span style="color:#ffd23f">${val}</span> <span class="sub">${msg}</span></div>`;
-  let h='<div class="sub" style="margin:0 0 4px">영상 추정값 (화면 가로 방향 기준, 3D는 위에서 본 기준)</div>';
+  let h='<div style="margin:0 0 6px;line-height:1.5">📐 <b>기저면이란?</b> 두 발이 바닥을 딛고 있는 범위(<b>기저면</b>) 안에 <b>몸 중심(⊕, 몸무게가 모이는 점 · 배꼽 근처)</b>이 있으면 안 넘어지고, 밖으로 나가면 흔들리거나 발을 다시 디뎌야 해요. 품새에서는 <b>서기·발차기 때 몸 중심이 발 사이(차는 중엔 축발 위)에 머무는지</b>를 봐요.<br><span class="sub">영상 위: 발 밑 초록 띠 = 기저면(두 발 사이) · 점선 = 몸 중심이 떨어지는 곳 · 오른쪽 위 한 줄 = 지금 균형 상태</span></div>';
   h+=row(s.inAll>=90,'무게중심이 기저면 안에 있던 시간',`${s.inAll}%`,'발이 땅에 닿아 있던 시간 중 몸무게 중심(⊕)이 발바닥이 덮는 범위 위에 있던 비율');
   if(s.inSingle!=null) h+=s.sKick?row(s.inSingle>=85,'발차기 중 축발 위 무게중심',`${s.inSingle}%`,s.inSingle>=85?'찰 때 축발 위에 무게중심을 잘 올려놨어요':'찰 때 무게중심이 축발 밖으로 자주 벗어나요 → 축발 위에 골반을 올려놓고 차세요')
     :row(null,'한 발로 서 있던 때 (걷기·딛기 포함)',`${s.inSingle}%`,'한 발일 때 무게중심이 그 발 위에 있던 비율 · 걷거나 딛는 중에는 원래 밖으로 나가요');
+  if(s.air) h+=row(null,'공중(두 발 다 뜬) 시간',`${(s.air/AFPS).toFixed(2)}초`,'뛰어차기 등');
+  h+='<details style="margin-top:6px"><summary class="sub" style="cursor:pointer">🔬 더 자세히 (코치·전문가용 수치)</summary>';
   if(s.mosMin) h+=row(s.mosMin.v>=0,'가장 불안정한 순간 (안정성 여유)',`${s.mosMin.v>=0?'+':''}${cm(s.mosMin.v)} · ${(s.mosMin.i/AFPS).toFixed(1)}초`,s.mosMin.v>=0?'속도까지 따져도 기저면 안에 머물렀어요':'움직이는 속도 때문에 넘어가는 쪽으로 쏠린 순간이에요 (누르면 이동). 딛거나 착지할 때 흔히 생겨요',s.mosMin.i);
   h+=row(null,'안정성 여유가 + 였던 시간',`${s.mosPos}%`,'속도를 반영한 예측 무게중심(XcoM)이 기저면 안에 있던 비율 · 클수록 안정적');
   if(s.lenD!=null) h+=row(null,'두 발 기저면 길이(평균)',cm(s.lenD),'두 발 바깥 끝 사이 거리 · 길수록 그 방향으로 안정적');
   if(s.ccS!=null) h+=row(s.sKick?s.ccS<=.06:null,s.sKick?'발차기 중 압력중심–무게중심 거리':'한 발 지지 때 압력중심–무게중심 거리',cm(s.ccS),!s.sKick?'작을수록 그 발 위에서 몸이 안정돼 있어요':s.ccS<=.06?'축발 위에서 흔들림이 적어요':'축발 위에서 몸이 많이 흔들려요 → 발바닥 전체로 버티고 시선·몸통을 고정하세요');
   if(s.ccMax) h+=row(null,'압력중심–무게중심 최대 거리',`${cm(s.ccMax.v)} · ${(s.ccMax.i/AFPS).toFixed(1)}초`,'균형을 잡느라 가장 애쓴 순간 (누르면 이동)',s.ccMax.i);
   if(s.topIn!=null) h+=row(s.topIn>=85,'위에서 본 기저면 안 (3D)',`${s.topIn}%`,'두 발 바닥이 만드는 넓이(앞뒤+좌우) 안에 무게중심이 있던 비율');
-  if(s.air) h+=row(null,'공중(두 발 다 뜬) 시간',`${(s.air/AFPS).toFixed(2)}초`,'뛰어차기 등');
-  h+='<div class="sub">기저면 = 땅에 닿은 발바닥이 덮는 범위. 무게중심 ⊕ 이 이 안에 있으면 서 있을 수 있어요. 안정성 여유(MoS) = 몸이 움직이는 속도까지 반영한 예측 무게중심(XcoM, Hof 2005)과 기저면 끝 사이 거리 · +면 안정, −면 그쪽으로 넘어가는 중(발을 디뎌야 함). 압력중심(CoP) = 땅을 누르는 힘의 중심.</div>';
+  h+='<div class="sub">안정성 여유(MoS) = 몸이 움직이는 속도까지 반영해 "곧 어디로 갈지" 예측한 몸 중심이 기저면 안에 있는지(Hof 2005) · 압력중심 = 발바닥에 힘이 실리는 점</div></details>';
   el.innerHTML=h; }
 function drawBalance(){
   if(!BAL||!$('balOn').checked||!track) return;
   const i=grfAt(); let b=BAL.f[i]; if(!b){ const R=Math.round(.2*AFPS); for(let d=1;d<=R&&!b;d++) b=BAL.f[i-d]||BAL.f[i+d]; } if(!b) return;
-  const W=cv.width,H=cv.height,s=sc(), kx=W/video.videoWidth, ky=H/video.videoHeight;
+  const W=cv.width,H=cv.height,s=Math.max(.5,cv.width/Math.max(1,cv.getBoundingClientRect().width||cv.width))*.95, kx=W/video.videoWidth, ky=H/video.videoHeight;
   ctx.save(); ctx.lineCap='round';
   if(!b.air){
     const fy=b.floorY*ky+6*s, x0=b.bmin*kx, x1=b.bmax*kx, good=b.cin>=0, col=good?'82,224,122':'255,90,90';
     // 기저면 띠
     ctx.fillStyle=`rgba(${col},.28)`; ctx.strokeStyle=`rgba(${col},.95)`; ctx.lineWidth=2.5*s;
     rrect(x0,fy-5*s,Math.max(4*s,x1-x0),10*s,5*s); ctx.fill(); ctx.stroke();
-    outText(`기저면 ${Math.round(b.len*100)}cm`,(x0+x1)/2,fy+24*s,'#fff',12*s);
+    outText(`기저면 ${Math.round(b.len*100)}cm`,(x0+x1)/2,fy+20*s,'#fff',11*s);
     // 무게중심 수직선
     const cx=b.com.x*kx, cy=b.com.y*ky;
     ctx.setLineDash([6*s,6*s]); ctx.strokeStyle=`rgba(${col},.95)`; ctx.lineWidth=2.5*s; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx,fy); ctx.stroke(); ctx.setLineDash([]);
     ctx.fillStyle=`rgb(${col})`; ctx.beginPath(); ctx.arc(cx,fy,6*s,0,7); ctx.fill();
-    // 예측 무게중심(XcoM)
-    const xx=b.xcom*kx, gx=b.mos>=0;
-    if(Math.abs(xx-cx)>3*s) arrow(cx,fy-14*s,xx,fy-14*s,gx?'#b5f5c8':'#ff9a9a',2.5*s);
-    ctx.fillStyle=gx?'#52e07a':'#ff5a5a'; ctx.beginPath(); ctx.moveTo(xx,fy-6*s); ctx.lineTo(xx-7*s,fy-20*s); ctx.lineTo(xx+7*s,fy-20*s); ctx.closePath(); ctx.fill();
-    // 압력중심
-    const px=b.cop*kx; ctx.fillStyle='#ff9f43'; ctx.strokeStyle='#000'; ctx.lineWidth=1.5*s; ctx.beginPath(); ctx.rect(px-5*s,fy-5*s,10*s,10*s); ctx.fill(); ctx.stroke();
+    outText('⊕ 무게중심',cx,fy-15*s,`rgb(${col})`,11*s);
   }
-  // 오른쪽 계기판
-  ctx.restore(); ctx.save(); hud();
-  const pw=228*s, rows=b.air?1:4, map=!b.air&&b.top&&b.top.poly.length, ph=(30+rows*19+(map?132:0))*s, px=W-pw-12*s, py=(($('wtOn').checked&&($('grfOn').checked||$('shiftOn').checked))?100:12)*s;
-  rrect(px,py,pw,ph,10*s); ctx.fillStyle='rgba(0,0,0,.66)'; ctx.fill();
-  ctx.font=`bold ${13*s}px sans-serif`; ctx.textAlign='left'; ctx.fillStyle='#ddd'; ctx.fillText('📐 기저면·안정성',px+10*s,py+19*s);
-  let y=py+38*s; const ln=(t,c)=>{ ctx.fillStyle=c; ctx.font=`bold ${12*s}px sans-serif`; ctx.fillText(t,px+10*s,y); y+=19*s; };
-  if(b.air) ln('🦘 공중 — 기저면 없음','#cfd6df');
-  else { ln(`기저면 ${Math.round(b.len*100)}cm · ${b.single?'한 발':'두 발'}`,'#fff');
-    ln(`⊕ 무게중심 ${b.cin>=0?'안쪽 ✓':'밖 ✗'} (끝까지 ${b.cin>=0?'+':''}${Math.round(b.cin*100)}cm)`,b.cin>=0?'#52e07a':'#ff6b6b');
-    ln(`▲ 안정성 여유 ${b.mos>=0?'+':''}${Math.round(b.mos*100)}cm ${b.mos>=0?'안정':'넘어가는 중'}`,b.mos>=0?'#52e07a':'#ff6b6b');
-    ln(`■ 압력중심–무게중심 ${Math.round(b.cc*100)}cm`,'#ff9f43'); }
-  if(map){ // 위에서 본 기저면 (3D)
-    const mx=px+10*s, my=y-8*s, mw=pw-20*s, mh=120*s, T=b.top, pts=T.poly.concat([T.com]);
-    let ax=1e9,bx=-1e9,ay=1e9,by=-1e9; pts.forEach(p=>{ax=Math.min(ax,p.x);bx=Math.max(bx,p.x);ay=Math.min(ay,p.y);by=Math.max(by,p.y)});
-    const span=Math.max(.5,bx-ax,by-ay)*1.25, cxm=(ax+bx)/2, cym=(ay+by)/2, k=Math.min(mw,mh)/span, X=p=>mx+mw/2+(p.x-cxm)*k, Y=p=>my+mh/2-(p.y-cym)*k;
-    ctx.fillStyle='rgba(255,255,255,.06)'; ctx.fillRect(mx,my,mw,mh);
-    ctx.strokeStyle='rgba(255,255,255,.12)'; ctx.lineWidth=1; for(let g=-2;g<=2;g++){ const gx=mx+mw/2+g*.2*k, gy=my+mh/2+g*.2*k; if(gx>mx&&gx<mx+mw){ctx.beginPath();ctx.moveTo(gx,my);ctx.lineTo(gx,my+mh);ctx.stroke();} if(gy>my&&gy<my+mh){ctx.beginPath();ctx.moveTo(mx,gy);ctx.lineTo(mx+mw,gy);ctx.stroke();} }
-    const ok=T.d>=0; ctx.fillStyle=ok?'rgba(82,224,122,.35)':'rgba(255,90,90,.3)'; ctx.strokeStyle=ok?'#52e07a':'#ff5a5a'; ctx.lineWidth=2*s;
-    ctx.beginPath(); T.poly.forEach((p,j)=>j?ctx.lineTo(X(p),Y(p)):ctx.moveTo(X(p),Y(p))); ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(X(T.com),Y(T.com),5*s,0,7); ctx.fill(); ctx.strokeStyle='#000'; ctx.lineWidth=1.5*s; ctx.stroke();
-    ctx.font=`${10*s}px sans-serif`; ctx.fillStyle='#aab'; ctx.fillText('위에서 본 기저면 · 칸 20cm',mx+4*s,my+mh-5*s);
-  }
+  // 오른쪽 위: 한 줄 균형 배지 (쉬운 말로)
+  ctx.restore(); ctx.save(); hud(); { const s=Math.max(.5,cv.width/Math.max(1,cv.getBoundingClientRect().width||cv.width))*.95;
+  const half=Math.max(.01,b.len/2), rel=b.cin/half, side=b.com&&b.bmin!=null?(b.com.x>(b.bmin+b.bmax)/2?'화면 오른쪽':'화면 왼쪽'):'', ft=b.single?'딛은 발':'기저면';
+  const t=b.air?'🦘 공중 — 발이 떠서 기저면이 없어요':b.cin<0?`❌ 무게중심이 ${ft} 밖 (${side} ${Math.round(-b.cin*100)}cm) — 흔들려요`:b.mos<0?`⚠️ 무게중심이 ${side}으로 쏠리는 중 — 곧 흔들려요`:
+    rel>=.6?`✅ 무게중심이 ${ft} 한가운데 — 아주 안정적`:rel>=.25?`✅ 무게중심이 ${ft} 안 — 안정적 (끝까지 ${Math.round(b.cin*100)}cm)`:`🟡 무게중심이 ${ft} ${side} 끝 가까이 — 조금 불안정`;
+  const c=b.air?'#cfd6df':b.cin<0?'#ff6b6b':b.mos<0||rel<.25?'#ffc53d':'#52e07a';
+  ctx.font=`bold ${13*s}px sans-serif`; const pw=Math.min(W-24*s,ctx.measureText(t).width+20*s), ph=28*s, px=W-pw-12*s, py=(($('wtOn').checked&&($('grfOn').checked||$('shiftOn').checked))?100:12)*s;
+  rrect(px,py,pw,ph,10*s); ctx.fillStyle='rgba(0,0,0,.7)'; ctx.fill(); ctx.strokeStyle=c; ctx.lineWidth=1.5*s; ctx.stroke(); ctx.textAlign='left'; ctx.textBaseline='middle'; ctx.fillStyle=c; ctx.fillText(t,px+10*s,py+ph/2); }
   ctx.restore(); }
 
 function grfAt(){ if(!gb) return -1; return Math.max(0,Math.min(gb.n-1,Math.round(vtime()*AFPS))); }
@@ -4802,9 +4971,29 @@ const RULES=[
  {id:'trunkRot',label:'몸통 회전',P:['obl'],S:['erec']},
  {id:'singleLeg',label:'한 발 서기 골반 균형',P:['gmed'],S:['tfl','gmax']},
  {id:'rearPush',label:'뒷다리로 땅 밀기 (밀어낼 때 다리 전체가 함께 힘줌)',P:['bf','vl','gas','add'],S:['gmax','sm','vm','sol']},
- {id:'punchHold',label:'지르기 · 팔 뻗어 고정 (주먹 꽉 쥐고 팔꿈치 고정 = 동시 수축)',P:['tri','delt','fflx'],S:['bic','fext','pec']},
- {id:'chamber',label:'당긴 손 · 허리에 주먹 당겨 고정',P:['bic'],S:['lat','fflx']},
- {id:'kickLock',label:'차는 다리 뻗어 고정 (무릎 잠금 = 동시 수축)',P:['vl','vm','rf'],S:['bf','sm']}];
+ {id:'punchHold',label:'지르기·막기 · 주먹 꽉 쥐고 손목 고정 (전완근이 주인공 · 팔꿈치 잠금 동시 수축)',P:['fflx','fext','tri'],S:['bic','delt']},
+ {id:'chamber',label:'당긴 손 · 허리에 주먹 당겨 고정',P:['fflx','fext'],S:['bic','lat']},
+ {id:'fistGrip',label:'주먹 쥐고 손목 고정 (품새 내내 주먹을 쥐고 있어요)',P:['fflx','fext'],S:[]},
+ {id:'kickLock',label:'차는 다리 뻗어 고정 (무릎 잠금 = 동시 수축)',P:['vl','vm','rf'],S:['bf','sm']},
+ {id:'sqKnee',label:'무릎 굽혀 버티기 — 무릎 펴는 힘 (주춤서기·앞굽이·스쿼트)',P:['vl','vm'],S:['rf']},
+ {id:'sqHip',label:'엉덩이 뒤로 빼고 버티기 — 엉덩관절 펴는 힘',P:['gmax'],S:['add']},
+ {id:'sqHam',label:'무릎·엉덩관절 안정 — 햄스트링(사두근과 동시 수축 + 숙인 상체 버티기)',P:['bf','sm'],S:[]},
+ {id:'sqCalf',label:'발목 버티기 — 종아리 (무릎을 깊이 굽힐수록 비복근보다 가자미근이 일함)',P:['sol','gas'],S:[]},
+ {id:'sqTib',label:'정강이 앞 — 정강이를 앞으로 기울여 버티고 균형 잡기 (발목 동시 수축)',P:['tib'],S:[]},
+ {id:'sqWide',label:'넓게 서서 무릎 벌려 버티기 (주춤서기)',P:['add','gmed'],S:['tfl']}];
+/* 닫힌 사슬(두 발 딛고) 버티기 모델 — 영상 한 대의 앞뒤 깊이는 부정확해서, 두 발로 무릎을 굽혀 버틸 때는 역동역학 대신 알려진 스쿼트 생체역학으로 계산해요
+   · 무릎 펴는 돌림힘 ≈ 무릎 굽힘에 비례 (맨몸 스쿼트 90°에서 다리 하나당 약 1.2 N·m/kg)
+   · 대퇴직근은 엉덩관절이 굽어 있으면 짧아져 덜 일해요(두 관절 근육) → 보조
+   · 엉덩관절 펴는 힘 ≈ 엉덩관절 굽힘 + 상체 숙임 · 넓게 서면 큰모음근(내전근)이 엉덩관절 펴기를 도와요
+   · 햄스트링 = 숙인 상체 버티기 + 사두근과의 동시 수축(무릎 앞뒤 안정)
+   · 종아리: 정강이가 앞으로 기울수록 발목 펴는 돌림힘↑ · 무릎이 60° 넘게 굽으면 비복근은 짧아져 가자미근이 주로 일해요
+   · 전경골근: 정강이를 앞으로 기울인 채 버티고, 흔들림을 잡느라 종아리와 동시 수축
+   · 같은 자세로 오래 버티면(등척성) 근지구력 자극·피로가 쌓여요 → 버틴 시간만큼 자극도↑ */
+let KFC=null;
+function kfArr(){ if(KFC&&KFC.t===track) return KFC.a; const D=180/Math.PI;
+  const g=(l,h,k,an)=>{ const H=l[h],K=l[k],A=l[an]; if(!H||!K||!A||H.wx==null) return null; const u=[H.wx-K.wx,H.wy-K.wy,H.wz-K.wz], v=[A.wx-K.wx,A.wy-K.wy,A.wz-K.wz], c=(u[0]*v[0]+u[1]*v[1]+u[2]*v[2])/((Math.hypot(...u)*Math.hypot(...v))||1); return 180-Math.acos(Math.max(-1,Math.min(1,c)))*D; };
+  const a=(track||[]).map(f=>{ const l=f&&f.lm; if(!l) return null; const x=g(l,23,25,27), y=g(l,24,26,28); return x==null||y==null?null:Math.min(x,y); }); KFC={t:track,a}; return a; }
+function holdSec(i){ const A=kfArr(); if(!A||A[i]==null||A[i]<20) return 0; const ref=A[i]; let j=i; while(j>0&&A[j-1]!=null&&A[j-1]>=20&&Math.abs(A[j-1]-ref)<15) j--; return (i-j)/AFPS; }
 const TY={con:'단축성',ecc:'신장성',iso:'등척성'}, nm=id=>MU.find(m=>m.id===id).n;
 let MDEL=new Set(); try{ MDEL=new Set(JSON.parse(localStorage.getItem('coachPro.musDel')||'[]')); }catch(e){}
 const saveM=()=>{ try{ localStorage.setItem('coachPro.musDel',JSON.stringify([...MDEL])); }catch(e){} };
@@ -5056,6 +5245,11 @@ function muAct(p){
       r.P.forEach(id=>{ if(strong) map[S+id]={role:'P',type}; else if(!map[S+id]) map[S+id]={role:'S',type}; }); });
     const lv=lvl>=3?'강함':lvl>=1.5?'보통':lvl>=1?'약함':'아주 약함';
     lines.push((both(r)?'':SN(S0))+r.label+' · '+TY[type]+(info?' · 힘 '+lv:'')+' — 주동 '+r.P.map(nm).join('·')+(r.S.length?' / 보조 '+r.S.map(nm).join('·'):'')+(info?' ('+info+')':'')); };
+  // 자극도(0~100)를 붙여 표시: 45 이상이면 주동
+  const putLv=(S,id,lv,info,type='iso')=>{ const r=R(id); if(!r||MDEL.has(r.id)) return; lv=Math.max(0,Math.min(100,Math.round(lv))); if(lv<12) return; const role=lv>=45?'P':'S';
+    r.P.forEach(m=>{ const o2=map[S+m]; if(!o2||(o2.lv||0)<lv) map[S+m]={role,type,lv}; });
+    r.S.forEach(m=>{ const o2=map[S+m]; if(!o2) map[S+m]={role:'S',type,lv:Math.round(lv*.55)}; });
+    lines.push(`${SN(S)}${r.label} · ${TY[type]} · 자극 ${lv}${info?` (${info})`:''}`); };
   // ----- 절대 좌표(미터): 세 시점 비교로 가속도 계산 -----
   const SC=S0.SC, VW=S0.VW, VH=S0.VH, ZS=(parseFloat($('hcm').value)||140)/170;
   const absP=q=>i=>{ const r=q[i]; if(!r||r.x==null) return null; return {x:r.x*VW*SC,y:-r.y*VH*SC,z:r.wz!=null?-r.wz*ZS:0}; };
@@ -5082,9 +5276,11 @@ function muAct(p){
   const judge=(S,c,w,thr,posId,negId,info)=>{ if(c==null||!isFinite(c)) return; const lvl=Math.abs(c)/thr; if(lvl<.6) return;
     put(S,R(c>0?posId:negId),typeOf(c,w),lvl,info?(Math.abs(c).toFixed(2)+' N·m/kg'):''); };
   const lr=F.lr, fr=F.fr, up=F.up, flexAx=VM.mul(lr,-1); // 팔다리(아래로 늘어진 부위)는 -lr 방향 회전이 '앞으로 들기(굴곡)'
+  const SQ={}; if(loaded('L')&&loaded('R')) ['L','R'].forEach(S=>{ const kf=A0[S].kf; if(kf!=null&&kf>=20&&Math.abs(dw(a=>a[S]&&a[S].kf))<120) SQ[S]=1; }); // 두 발 딛고 무릎 굽혀 (거의) 버티는 다리
   ['L','R'].forEach((S,o)=>{ const sg=S==='L'?1:-1, abdAx=VM.mul(fr,sg);
     const Hp=P0(23+o),Kn=P0(25+o),An=P0(27+o),To=P0(31+o),Sh=P0(11+o),El=P0(13+o),Wr=P0(15+o);
     const ext=GRF[S]?[GRF[S]]:[], sw=!ext.length; // 발이 떠 있는 다리(차기)는 다리 무게만 버티면 되니 기준을 낮춰요
+    if(!SQ[S]){ // 버티는 다리는 아래 '닫힌 사슬 버티기 모델'로
     // 발목
     if(Kn&&An&&To){ const ax=VM.nrm(VM.cross(VM.nrm(VM.sub(To,An)),VM.nrm(VM.sub(Kn,An)))), M=moment([segAcc('foot',o)],An,ext);
       if(M) judge(S,VM.dot(M,ax),dw(a=>a[S]&&a[S].df),sw?.04:.25,'ankleDF','anklePF',1); }
@@ -5094,13 +5290,14 @@ function muAct(p){
     // 엉덩관절 (앞뒤 · 옆)
     if(Hp&&Kn){ const M=moment([segAcc('foot',o),segAcc('shank',o),segAcc('thigh',o)],Hp,ext);
       if(M){ judge(S,VM.dot(M,flexAx),dw(a=>a[S]&&a[S].hf),sw?.15:.3,'hipFlex','hipExt',1); judge(S,VM.dot(M,abdAx),dw(a=>a[S]&&a[S].ha),sw?.15:.3,'hipAbd','hipAdd',1); } }
+    }
     // 팔꿈치
     if(Sh&&El&&Wr){ const u=VM.nrm(VM.sub(El,Sh)), v=VM.nrm(VM.sub(Wr,El)), lf=BC&&limbFrame(BC,S,'ua'), ref=VM.nrm(VM.cross(u,lf?lf.f:fr)), c=VM.cross(u,v), cl=VM.len(c);
       const ax=cl>.15?VM.mul(VM.nrm(c),VM.dot(c,ref)>=0?1:-1):ref, M=moment([segAcc('hand',o),segAcc('fore',o)],El,[]);
       if(M) judge(S,VM.dot(M,ax),dw(a=>a[S]&&a[S].ef),.025,'elFlex','elExt',1); }
     // 어깨 (앞뒤 · 옆)
     if(Sh&&El){ const M=moment([segAcc('hand',o),segAcc('fore',o),segAcc('uarm',o)],Sh,[]);
-      if(M){ judge(S,VM.dot(M,flexAx),dw(a=>a[S]&&a[S].sf),.07,'shFlex','shExt',1); judge(S,VM.dot(M,abdAx),dw(a=>a[S]&&a[S].sa),.07,'shAbd','shAdd',1); } } });
+      if(M){ judge(S,VM.dot(M,flexAx),dw(a=>a[S]&&a[S].sf),.12,'shFlex','shExt',1); judge(S,VM.dot(M,abdAx),dw(a=>a[S]&&a[S].sa),.12,'shAbd','shAdd',1); } } }); // 팔 무게만 버티는 정도는 약하게 (손기술의 힘은 어깨가 아니라 전완·몸통에서)
   // 몸통(허리): 위쪽 몸(몸통·머리·두 팔)의 무게를 버티는 힘
   { const HM=mid(P0(23),P0(24)), segUp=[]; const tr=(P)=>lerp(mid(P(11),P(12)),mid(P(23),P(24)),.5), hd=(P)=>mid(P(7),P(8))||P(0);
     const sa=(f,m)=>{ const a=f(Pm),b=f(P0),c=f(Pp); return a&&b&&c?{p:b,m,acc:clampA(VM.mul(VM.sub(VM.add(a,c),VM.mul(b,2)),1/(dd*dd)))}:null; };
@@ -5111,6 +5308,20 @@ function muAct(p){
     if(Math.abs(w)>45){ const P=w>0?'R':'L', Q=P==='R'?'L':'R';
       map[P+'obl']={role:'P',type:'con'}; if(!map[Q+'obl']) map[Q+'obl']={role:'S',type:'con'}; if(!map[P+'erec']) map[P+'erec']={role:'S',type:'con'};
       lines.push(`몸통 ${w>0?'왼쪽':'오른쪽'}으로 회전 · 단축성 — 주동 ${P==='R'?'오른쪽':'왼쪽'} 복사근(바깥) / 보조 ${Q==='R'?'오른쪽':'왼쪽'} 복사근(속)·척추기립근`); } }
+  // ----- 닫힌 사슬 버티기 모델 (두 발로 무릎 굽혀 버티기: 주춤서기·앞굽이·스쿼트) -----
+  if(SQ.L||SQ.R){ const hold=holdSec(Math.round(T*AFPS)), fh=1+Math.min(.8,hold/12), tl=Math.max(0,A0.tf||0);
+    const q2=i=>p[i]&&{x:p[i].x*VW,y:p[i].y*VH}, d2=(a,b)=>a&&b?Math.hypot(a.x-b.x,a.y-b.y):0, legL=(d2(q2(23),q2(25))+d2(q2(25),q2(27))+d2(q2(24),q2(26))+d2(q2(26),q2(28)))/2, wide=legL>0?Math.max(d2(q2(27),q2(28))/legL,Math.hypot((P0(27)||{x:0}).x-(P0(28)||{x:0}).x,((P0(27)||{z:0}).z-(P0(28)||{z:0}).z))/Math.max(.3,legL*SC)):0; // 두 발 너비 ÷ 다리 길이 (화면 기준이 더 정확)
+    const put2=(S,id,lvl,info)=>{ if(lvl<.5) return; putLv(S,id,lvl*25*fh,info); };
+    ['L','R'].forEach(S=>{ if(!SQ[S]) return; const kf=A0[S].kf, hf=Math.max(0,A0[S].hf||0), dfE=Math.max(A0[S].df||0,.45*kf), co=.03*kf; // 정강이 기울기: 측정값이 작으면 무릎 굽힘으로 추정(닫힌 사슬)
+      const Mk=.014*kf, Mh=.5*(.008*hf+.015*tl)+(wide>.5?.12:0), Ma=.2+.006*dfE;
+      put2(S,'sqKnee',Mk/.25,`무릎 ${Math.round(kf)}° · ${Mk.toFixed(2)} N·m/kg`);
+      put2(S,'sqHip',Mh/.25,`상체 숙임 ${Math.round(tl)}°`);
+      put2(S,'sqHam',.5*Mk/.25+Mh/.35,'사두근과 동시 수축');
+      put2(S,'sqCalf',Ma/.25+co,kf>60?'무릎을 깊이 굽혀 가자미근 위주':'비복근·가자미근');
+      put2(S,'sqTib',Math.max(0,dfE-10)/15+co,`정강이 앞으로 ${Math.round(dfE)}°`);
+      if(wide>.5) put2(S,'sqWide',.8+(wide-.5)*3+.01*kf,'넓게 선 자세');
+      if(kf>60&&map[S+'gas']&&map[S+'sol']){ map[S+'gas'].lv=Math.round((map[S+'sol'].lv||0)*.7); if(map[S+'gas'].lv<45) map[S+'gas'].role='S'; } });
+    if(hold>=1) lines.push(`⏱ 같은 자세로 ${hold.toFixed(1)}초 버티는 중 — 오래 버틸수록 근지구력 자극·피로가 쌓여요 (자극도 ×${fh.toFixed(2)})`); }
   // 생리학적으로 알려진 '함께 힘주기(동시 수축)' 보충
   ['L','R'].forEach((S,o)=>{ const other=S==='L'?'R':'L', ld=loaded(S);
     if(ld&&!loaded(other)) put(S,R('singleLeg'),'iso'); // 한 발 서기 → 중둔근이 골반을 수평으로
@@ -5119,8 +5330,11 @@ function muAct(p){
     const ef=A0[S].ef, sf=A0[S].sf, sa=A0[S].sa, we=dw(a=>a[S]&&a[S].ef);
     let snap=false; if(ef!=null&&ef<32&&((sf!=null&&sf>40)||(sa!=null&&Math.abs(sa)>40))){ // 최근 0.5초 안에 팔꿈치를 빠르게(300°/초 이상) 편 경우 = 지르기
       let prev=null; for(let k=0;k<=6;k++){ const q=angsP(poseAt(track,Math.max(0,T-k*.08))), e=q&&q[S]&&q[S].ef; if(e!=null&&prev!=null&&(e-prev)/.08>300) snap=true; if(e!=null) prev=e; } }
-    if(snap) put(S,R('punchHold'),we<-45?'con':'iso'); // 지르기: 삼두·이두 동시 수축 + 주먹 쥐기
-    else if(ef!=null&&ef>65&&sf!=null&&sf<-5) put(S,R('chamber'),'iso'); // 당긴 손
+    const armFast=Math.abs(we)>200||Math.abs(dw(a=>a[S]&&a[S].sf))>200, fist=!($('handMode')&&$('handMode').value==='knife');
+    if(snap) putLv(S,'punchHold',92,'주먹을 꽉 쥐고 손목을 고정한 채 뻗어요'); // 지르기·막기: 전완근(쥐기·손목 고정) + 팔꿈치 동시 수축
+    else if(ef!=null&&ef>65&&sf!=null&&sf<-5) putLv(S,'chamber',70,'허리에 주먹 당겨 고정'); // 당긴 손
+    else if(armFast) putLv(S,'punchHold',80,'막기·치기 동작 중');
+    if(fist&&!BACKV) putLv(S,'fistGrip',snap||armFast?90:55,snap||armFast?'기술 순간 꽉':'주먹 쥐고 버티기');
     { const kf0=A0[S].kf, hf0=A0[S].hf, ha0=A0[S].ha; // 차는 다리를 뻗은 순간: 대퇴사두근이 무릎을 잠그고 햄스트링이 같이 버팀
       if(!ld&&kf0!=null&&kf0<25&&((hf0!=null&&hf0>40)||(ha0!=null&&ha0>35))) put(S,R('kickLock'),'iso'); } });
   return LASTACT;
@@ -5227,10 +5441,10 @@ function focus2D(){
 }
 function muChips(act){ // 지금 쓰는 근육을 눌러 볼 수 있는 이름표 (재생 중에도 가능)
   const ks=[]; MU.forEach(m=>['L','R'].forEach(S=>{ const r=act&&act.map[S+m.id]; if(r) ks.push([m,S,r]); }));
-  const key=ks.map(([m,S,r])=>S+m.id+r.role).join(',');
-  const ch=role=>ks.filter(x=>x[2].role===role).map(([m,S])=>`<span class="chip mu${role}" data-u="${m.id}" data-s="${S}">${S==='L'?'왼':'오'} ${m.n}</span>`).join(' ');
+  const key=ks.map(([m,S,r])=>S+m.id+r.role+(r.lv?Math.round(r.lv/5):'')).join(',');
+  const ch=role=>ks.filter(x=>x[2].role===role).map(([m,S,r])=>`<span class="chip mu${role}" data-u="${m.id}" data-s="${S}">${S==='L'?'왼':'오'} ${m.n}${r.lv?` <span style="opacity:.8">${r.lv}</span>`:''}</span>`).join(' ');
   const P=ch('P'), Sx=ch('S');
-  return {key,html:key?(P?'<div>🟡 주동 '+P+'</div>':'')+(Sx?'<div style="margin-top:4px">🟢 보조 '+Sx+'</div>':'')+'<div class="sub" style="margin-top:4px">이름을 누르면 설명·운동이 나와요 (재생 중에도 돼요)</div>':'<div class="sub">뚜렷한 근육 움직임이 없는 순간이에요.</div>'};
+  return {key,html:key?(P?'<div>🟡 주동 '+P+'</div>':'')+(Sx?'<div style="margin-top:4px">🟢 보조 '+Sx+'</div>':'')+(ks.some(x=>x[2].lv)?'<div class="sub" style="margin-top:4px">숫자 = 자극도(0~100) · 관절에 걸리는 힘(무릎 굽힘·상체 숙임·정강이 기울기)과 같은 자세로 버틴 시간으로 계산해요</div>':'')+'<div class="sub" style="margin-top:4px">이름을 누르면 설명·운동이 나와요 (재생 중에도 돼요)</div>':'<div class="sub">뚜렷한 근육 움직임이 없는 순간이에요.</div>'};
 }
 function muNowText(){
   const a=LASTACT; if(!a) return '지금 뚜렷하게 쓰이는 근육이 없어요 (또는 정밀 분석 전이에요)';
@@ -5458,7 +5672,7 @@ function init3(){
   const ghB=GLK.map(()=>{ const m=new TH.Mesh(cylG,ghMat); m.renderOrder=6; m.frustumCulled=false; ghG.add(m); return m; }), ghJ=GHJ.map(()=>{ const m=new TH.Mesh(sphG,ghMat); m.renderOrder=6; m.frustumCulled=false; ghG.add(m); return m; });
   const ghHead=new TH.Mesh(sphG,ghMat); ghHead.renderOrder=6; ghG.add(ghHead);
   const GRAD={'11-12':.05,'11-23':.07,'12-24':.07,'23-24':.07,'11-13':.045,'13-15':.035,'12-14':.045,'14-16':.035,'23-25':.075,'25-27':.055,'24-26':.075,'26-28':.055,'27-29':.03,'29-31':.03,'27-31':.03,'28-30':.03,'30-32':.03,'28-32':.03};
-  function ghost3(p,SS,T){ ghG.visible=false; if(!$('ghost').checked||!$('gh3d').checked||!SS) return; let gp=null; try{ gp=ghostPose(T,p); }catch(e){ console.error(e); } if(!gp) return;
+  function ghost3(p,SS,T){ ghG.visible=false; if(!$('ghost').checked||!$('gh3d').checked||!SS) return; if($('cmpSrc').value==='ref'&&!$('ghRef').checked) return; let gp=null; try{ gp=ghostPose(T,p); }catch(e){ console.error(e); } if(!gp) return;
     const ZS=(parseFloat($('hcm').value)||140)/100/1.7, k=(parseFloat($('hcm').value)||140)/170, V=j=>{ const q=gp[j]; return q?new TH.Vector3((q.x*SS.VW-SS.X0)*SS.SC,-(q.y*SS.VH-SS.Y0)*SS.SC,-q.wz*ZS):null; };
     ghMat.color.set($('cmpColor').value||'#ff9f1c'); ghMat.opacity=ghA(); const dummy=$('ghStyle').value==='dummy', up=new TH.Vector3(0,1,0);
     GLK.forEach(([a,b],q)=>{ const A=V(a),B=V(b), m=ghB[q]; if(!A||!B){ m.visible=false; return; } const d=B.clone().sub(A), L=d.length(); if(L<1e-4){ m.visible=false; return; } m.visible=true;
@@ -5491,7 +5705,7 @@ function init3(){
         const Sh=V(11+o),El=V(13+o),Wr=V(15+o),Hp=V(23+o),Kn=V(25+o),An=V(27+o),He=V(29+o),To=V(31+o),Pk=V(17+o),Ix=V(19+o),Th=V(21+o);
         const lat0=vec(B.Lat(0)).multiplyScalar(sg), lat1=vec(B.Lat(1)).multiplyScalar(sg), axn=vec(B.axn);
         // 팔 (어깨 속에서 시작 → 어깨 → 팔꿈치 → 손목)
-        if(Sh&&El&&Wr){ const lf=limbFrame(B,S,'ua'), n0=lf?vec(lf.f):FR.clone();
+        if(Sh&&El&&Wr&&!backAt(T)){ const lf=limbFrame(B,S,'ua'), n0=lf?vec(lf.f):FR.clone();
           tube(P.arm,[Sh.clone().addScaledVector(lat1,-U(.04)).addScaledVector(axn,-U(.012)),Sh,El,Wr],
             [[0,U(.046),U(.048)],[1,U(.052),U(.052)],[1.35,U(.045),U(.043)],[1.8,U(.036),U(.034)],[2,U(.032),U(.033)],[2.25,U(.034),U(.04)],[2.7,U(.027),U(.031)],[3,U(.02),U(.026)]],n0);
           // 손 (손목 → 손가락 뿌리 → 손끝, 손바닥처럼 납작하게) + 엄지
@@ -5830,8 +6044,8 @@ document.addEventListener('drop',e=>{ if(!(e.dataTransfer&&e.dataTransfer.files&
   const f=[...e.dataTransfer.files].find(x=>x.type.startsWith('video/')); if(f) openVideoFile(f); else toast('영상 파일을 놓아 주세요'); });
 
 // 설정 기억 (이 기기 브라우저에 저장)
-const SET_VAL=['muCol','angMode','hcm','qual','rate','expRate','width','hold','grfDir','grfScale','trailLen','color','cmpColor','poomsae','thcm','athH','cmpSrc','ghStyle','ghA','myColor','myA','vidA','tvA'];
-const SET_CHK=[...AGIDS,'wtOn','kickOn','balOn','tkdOn','autoAngle','snap','always','autoFreeze','stab','grfLabel','grfLeg','grfPhase','grfGnd','grfHead','skName','skRib','skHand','ghost','pip','scoreOn','gh2d','gh3d','myOn','tvOver','stuVid'];
+const SET_VAL=['handMode','muCol','angMode','hcm','qual','rate','expRate','width','hold','grfDir','grfScale','trailLen','color','cmpColor','poomsae','thcm','athH','cmpSrc','ghStyle','ghA','myColor','myA','vidA','tvA'];
+const SET_CHK=[...AGIDS,'wtOn','kickOn','balOn','tkdOn','autoAngle','snap','always','autoFreeze','stab','grfLabel','grfLeg','grfPhase','grfGnd','grfHead','skName','skRib','skHand','ghost','pip','scoreOn','gh2d','gh3d','myOn','tvOver','stuVid','waistOn','duelOn'];
 function saveSet(){ try{ const o={}; SET_VAL.forEach(id=>o[id]=$(id).value); SET_CHK.forEach(id=>o[id]=$(id).checked); localStorage.setItem('coachPro.v1',JSON.stringify(o)); }catch(e){} }
 function loadSet(){ try{
   const o=JSON.parse(localStorage.getItem('coachPro.v1')||'null'); if(!o) return;
